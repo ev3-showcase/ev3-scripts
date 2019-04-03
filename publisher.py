@@ -9,8 +9,8 @@ def on_connect(client, userdata, flags, rc):
 client = mqtt.Client("publisher",transport='websockets')
 client.on_connect = on_connect
 
-#client.connect("dasd", 1883, 60)
-client.connect("dasd", 9001, 60)
+#client.connect("<hostname>", 1883, 60)
+client.connect("<hostname>", 9001, 60)
 
 client.loop_start()
 
