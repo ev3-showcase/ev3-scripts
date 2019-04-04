@@ -15,7 +15,6 @@ port =  os.getenv('MQTT_PORT', 1883)
 pub_name = os.getenv('HOSTNAME', ('publisher-' + uuid.uuid4().hex.upper()[0:6]))
 websocket = strtobool(os.getenv('MQTT_SOCKET', 'False'))
 
-
 if websocket:
   print('Connecting to %s:%d as %s' % (broker, port, pub_name))
   client = mqtt.Client(pub_name,transport='websockets')
