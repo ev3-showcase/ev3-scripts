@@ -1,6 +1,8 @@
 import time
 import os
 import uuid
+import signal
+from sys import exit
 
 from distutils.util import strtobool
 from datetime import datetime
@@ -9,6 +11,16 @@ import paho.mqtt.client as mqtt
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
+
+def on_disconnect(client, userdata, rc):
+    print("Disconnected with result code " + str(rc))
+
+def sigterm_handler(signal, frame):
+    client.disconnect()
+    print('System shutting down, closing connection')
+    exit(0)
+
+signal.signal(signal.SIGTERM, sigterm_handler)
 
 broker = os.getenv('MQTT_BROKER', 'localhost')
 port =  int(os.getenv('MQTT_PORT', 1883))
