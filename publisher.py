@@ -2,6 +2,7 @@ import time
 import os
 import uuid
 import signal
+import json
 from sys import exit
 
 from distutils.util import strtobool
@@ -25,6 +26,7 @@ broker = os.getenv('MQTT_BROKER', 'localhost')
 port =  int(os.getenv('MQTT_PORT', 1883))
 pub_name = os.getenv('HOSTNAME', ('publisher-' + uuid.uuid4().hex.upper()[0:6]))
 websocket = strtobool(os.getenv('MQTT_SOCKET', 'False'))
+healthcheck = os.getenv('MQTT_HEALTHCHECK', '/tmp/publisher/healthz')
 wait_timer = int(os.getenv('MQTT_WAITTIME', 1))
 
 if websocket:
@@ -42,8 +44,13 @@ client.connect(broker, port, 60)
 client.loop_start()
 counter = 0
 
+message = {
+        'counter': 0,
+        'hostname': pub_name,
+        'foo': 'bar',
+        }
+
 while True:
+    message['counter'] = message['counter'] + 1
+    client.publish('test/host', json.dumps(message))
     time.sleep(wait_timer)
-    counter += 1
-    client.publish("test/cnt", "Cnt: %d" % counter)
-    client.publish("test/host", pub_name)

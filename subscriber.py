@@ -2,6 +2,7 @@
 import signal
 import uuid
 import os
+import json
 from sys import exit
 
 from distutils.util import strtobool
@@ -13,7 +14,9 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("test/#")
 
 def on_message(client, userdata, msg):
-    print(msg.topic + " " + msg.payload.decode('utf-8'))
+    message = json.loads(msg.payload)
+    print(message['hostname'])
+    #print(json msg.payload.decode('utf-8'))
 
 def sigterm_handler(signal, frame):
     client.disconnect()
