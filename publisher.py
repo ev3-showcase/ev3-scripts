@@ -13,8 +13,10 @@ client.on_connect = on_connect
 client.connect("<hostname>", 9001, 60)
 
 client.loop_start()
+counter = 0
 
 while True:
     time.sleep(2)
-    client.publish("test/temperature", "test")
-    client.publish("test/datetime", str(datetime.now()))
+    counter += 1
+    client.publish("test/cnt", "Cnt: %d" % counter)
+    client.publish("test/datetime", str(datetime.now().date()))
