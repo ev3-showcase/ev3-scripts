@@ -5,7 +5,6 @@ import signal
 from sys import exit
 
 from distutils.util import strtobool
-from datetime import datetime
 
 import paho.mqtt.client as mqtt
 
