@@ -11,7 +11,7 @@ def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
 
 broker = os.getenv('MQTT_BROKER', 'localhost')
-port =  os.getenv('MQTT_PORT', 1883)
+port =  int(os.getenv('MQTT_PORT', 1883))
 pub_name = os.getenv('HOSTNAME', ('publisher-' + uuid.uuid4().hex.upper()[0:6]))
 websocket = strtobool(os.getenv('MQTT_SOCKET', 'False'))
 
