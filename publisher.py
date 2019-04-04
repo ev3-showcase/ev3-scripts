@@ -14,6 +14,7 @@ broker = os.getenv('MQTT_BROKER', 'localhost')
 port =  int(os.getenv('MQTT_PORT', 1883))
 pub_name = os.getenv('HOSTNAME', ('publisher-' + uuid.uuid4().hex.upper()[0:6]))
 websocket = strtobool(os.getenv('MQTT_SOCKET', 'False'))
+wait_timer = int(os.getenv('MQTT_WAITTIME', 1))
 
 if websocket:
   print('Connecting to %s:%d as %s via websocket' % (broker, port, pub_name))
@@ -31,7 +32,7 @@ client.loop_start()
 counter = 0
 
 while True:
-    time.sleep(2)
+    time.sleep(wait_timer)
     counter += 1
     client.publish("test/cnt", "Cnt: %d" % counter)
     client.publish("test/host", pub_name)
