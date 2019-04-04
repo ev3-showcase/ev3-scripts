@@ -46,6 +46,7 @@ client.loop_start()
 counter = 0
 
 message = {
+        'counter': 0,
         'speed': 0,
         'steering': 0,
         'hostname': pub_name,
