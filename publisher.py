@@ -4,6 +4,7 @@ import uuid
 import signal
 import json
 from sys import exit
+from random import randint
 
 from distutils.util import strtobool
 
@@ -45,12 +46,14 @@ client.loop_start()
 counter = 0
 
 message = {
-        'counter': 0,
+        'speed': 0,
+        'steering': 0,
         'hostname': pub_name,
-        'foo': 'bar',
         }
 
 while True:
+    message['speed'] = randint(-90, 100)
+    message['steering'] = randint(-90, 100)
     message['counter'] = message['counter'] + 1
     client.publish('test/host', json.dumps(message))
     time.sleep(wait_timer)
