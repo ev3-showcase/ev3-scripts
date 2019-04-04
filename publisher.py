@@ -17,10 +17,10 @@ websocket = strtobool(os.getenv('MQTT_SOCKET', 'False'))
 
 if websocket:
   print('Connecting to %s:%d as %s' % (broker, port, pub_name))
-  client = mqtt.Client(pub_name,transport='websockets')
+  client = mqtt.Client(pub_name)
 else:
   print('Connecting to %s:%d as %s via websocket' % (broker, port, pub_name))
-  client = mqtt.Client(pub_name)
+  client = mqtt.Client(pub_name,transport='websockets')
 
 client.on_connect = on_connect
 
