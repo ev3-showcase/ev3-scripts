@@ -34,4 +34,4 @@ while True:
     time.sleep(2)
     counter += 1
     client.publish("test/cnt", "Cnt: %d" % counter)
-    client.publish("test/datetime", str(datetime.now().date()))
+    client.publish("test/host", pub_name)
