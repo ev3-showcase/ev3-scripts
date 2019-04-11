@@ -3,7 +3,7 @@ import signal
 import uuid
 import os
 import json
-from sys import exit
+import sys
 
 from distutils.util import strtobool
 
@@ -14,14 +14,16 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("test/#")
 
 def on_message(client, userdata, msg):
+    print(sys.getdefaultencoding())
+    print(sys.stdout.encoding)
+    print(sys.version)
     message = json.loads(msg.payload)
     print(message['hostname'])
-    #print(json msg.payload.decode('utf-8'))
 
 def sigterm_handler(signal, frame):
     client.disconnect()
     print('System shutting down, closing connection')
-    exit(0)
+    sys.exit(0)
 
 signal.signal(signal.SIGTERM, sigterm_handler)
 
