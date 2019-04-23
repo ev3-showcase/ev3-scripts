@@ -5,15 +5,20 @@ import os
 import json
 from sys import exit
 
-from distutils.util import strtobool
+#import datetime
+import time
+
+#from distutils.util import strtobool
 
 import paho.mqtt.client as mqtt
+import logging
 
-class Car(mqtt.Client):
-    def __init__(self, car_name='', speed=0, steering=0, min_speed=-90, max_speed=90,min_steer=-90, max_steer=90, broker='localhost', port=1883):
+class Car(object):
+    def __init__(self, car_name='', speed=0, steering=0, min_speed=-90, max_speed=90,min_steer=-90, max_steer=90, broker='localhost', port=1883, loglevel='WARNING'):
         self.name = self.generate_name(car_name)
         self.speed = speed
         self.steering = steering
+        self.topics = [('test/host',0),('{}/speed'.format(self.name),0),('{}/steering'.format(self.name),0)]
         self.MIN_SPEED = min_speed
         self.MAX_SPEED = max_speed
         self.MIN_STEER = min_steer
@@ -21,10 +26,20 @@ class Car(mqtt.Client):
         self.broker = broker
         self.port = port
 
-        super().__init__(self.name) # actually create the client and call it like the car
-        self.on_connect = self.on_connect_callback
+        logging.basicConfig(level=getattr(logging, loglevel.upper()))
+        logger = logging.getLogger(__name__)
 
-        self.connect(broker, port, 60) # connect to the broker
+        self.mqtt_client = mqtt.Client(self.name)
+        self.mqtt_client.on_connect = self.on_connect
+        self.mqtt_client.on_message = self.on_message
+        self.mqtt_client.on_disconnect = self.on_disconnect
+
+        self.mqtt_client.connect(host=self.broker, port=self.port, keepalive=60) # connect to the broker
+
+        self.mqtt_client.loop_start()
+        self.mqtt_client.subscribe(self.topics)
+
+        logging.info("Car created as {}".format(self.name))
 
     def generate_name(self, car_name):
         if car_name:
@@ -32,17 +47,34 @@ class Car(mqtt.Client):
         else:
             return 'car-' + uuid.uuid4().hex.upper()[0:6]
 
-    def on_connect_callback(self, userdata, flags, rc):
+    def disconnect(self):
+        self.mqtt_client.disconnect()
+
+    def on_connect(self, mqtt_client, userdata, flags, rc):
         if rc==0:
             self.connected_flag=True
-            print("connected OK Returned code=",rc)
-            self.subscribe('car/speed')
+            logging.info("Successful connection with rc {}".format(rc))
+            self.mqtt_client.subscribe(self.topics)
         else:
-            print("Bad connection Returned code= ",rc)
-#
-#    def on_message(client, userdata, msg):
-#        print("Got a message")
-#        self.accelerate(int(msg.payload))
+            logging.critical("Connection failed with rc {}".format(rc))
+
+    def on_disconnect(self, mqtt_client, obj, rc):
+        logging.info("disconnecting")
+        try:
+            if rc == 0:
+                logging.info("disconnect request was initiated")
+            else:
+                if rc >= 1:
+                    error_msg = self.getErrorString(rc)
+                    logging.error("disconnect occurred due to {}. Will attempt to reconnect".format(error_msg))
+                    mqtt_client.reconnect()
+        except Exception as e:
+            logging.error("Error occurred in disconnect callback with error {}", str(e), exc_info=True)
+
+    def on_message(self, client, userdata, msg):
+        logging.info("Message received")
+        loging.debug("Message content: {}".format(msg.payload))
+        #self.accelerate(int(msg.payload))
 
     def __repr__(self):
         return("Car %s" % self.name)
@@ -52,7 +84,9 @@ class Car(mqtt.Client):
 
     def accelerate(self, speed):
         if speed in range(self.MIN_SPEED, self.MAX_SPEED):
+            logging.debug("Previous speed was {}".format(self.speed))
             self.speed = speed
+            logging.info("Speed set to {}".format(self.speed))
         else:
             raise ValueError('Value is out of range MIN_SPEED, MAX_SPEED')
 
@@ -64,22 +98,24 @@ class Car(mqtt.Client):
 
 
 def sigterm_handler(signal, frame):
-    client.loop_stop(Force=True)
-    client.disconnect()
-    print('System shutting down, closing connection')
+    lego.disconnect()
+    logging.info('Termination signal received, closing connection')
     exit(0)
+
 
 def main():
     signal.signal(signal.SIGTERM, sigterm_handler)
-    
-#    client.on_connect = on_connect
-#    client.on_message = on_message
+    signal.signal(signal.SIGINT, sigterm_handler)
 
     broker = os.getenv('MQTT_BROKER', 'localhost')
     port =  int(os.getenv('MQTT_PORT', 1883))
 
     lego = Car(broker=broker, port=port)
-    lego.subscribe(('car/speed',0),('car/steering',0))
+    time.sleep(5)
+    lego.mqtt_client.subscribe([('test/host',0),('car/speed',0),('car/steering',0)])
+    time.sleep(60) 
+    lego.disconnect()
+    time.sleep(5)
 
 if __name__ == '__main__':
     main()
