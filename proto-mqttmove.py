@@ -7,7 +7,7 @@ from time import sleep
 import json
 from datetime import datetime
 import paho.mqtt.client as mqtt
-from ev3dev2.motor import LargeMotor, MediumMotor, OUTPUT_B, OUTPUT_C, OUTPUT_D
+from ev3dev2.motor import LargeMotor, MediumMotor, MoveTank, OUTPUT_B, OUTPUT_C, OUTPUT_D, SpeedNativeUnits
 from ev3dev2.sound import Sound
 
 
@@ -15,12 +15,13 @@ from ev3dev2.sound import Sound
 ON = True
 OFF = False
 
+MAX_SPEED = 900
+
 # Load Motors
 
-lm = LargeMotor(OUTPUT_C)
-rm = LargeMotor(OUTPUT_B)
+lm = LargeMotor(OUTPUT_B)
+dt = MoveTank(OUTPUT_B, OUTPUT_C)
 sm = MediumMotor(OUTPUT_D)
-global steerlock=0
 
 
 def debug_print(*args, **kwargs):
@@ -52,58 +53,79 @@ def set_font(name):
     os.system('setfont ' + name)
 
 def speedlimiter(speed):
-    MAX_SPEED = 90
-    MIN_SPEED = -90
-    if speed > MAX_SPEED:
-        speed = 90
-    elif speed < MIN_SPEED:
-        speed = -90
+    max_s = MAX_SPEED
+    min_s = MAX_SPEED * -1
+    if speed > max_s:
+        speed = max_s
+    elif speed < min_s:
+        speed = min_s
     return(speed)
 
-def anglelimiter(speed):
-    MAX_SPEED = 90
-    MIN_SPEED = -90
-    if speed > MAX_SPEED:
-        speed = 90
-    elif speed < MIN_SPEED:
-        speed = -90
-    return(speed)
+def anglelimiter(angle):
+    max_angle = CENTER_POSITION + MAX_ROTATION
+    min_angle = CENTER_POSITION - MAX_ROTATION
+    if angle > max_angle:
+        angle = max_angle
+    elif angle < min_angle:
+        angle = min_angle
+    return(angle)
 
+def distance(x,y):
+    return abs(x-y)
 
 def calibrate_steering():
-    sm.on(25)
-    while not sm.is_stalled:
-        sleep(0.10)
+    sm.on(10)
+    while not sm.is_overloaded:
+        sleep(0.01)
     sm.off()
     debug_print('First Lock Position: %d' % sm.position)
     first_pos = sm.position
-    sm.on(-25)
-    while not sm.is_stalled:
-        sleep(0.10)
+    sm.on(-10)
+    while not sm.is_overloaded:
+        sleep(0.01)
     sm.off()
     debug_print('Second Lock Position: %d' % sm.position)
     sec_pos = sm.position
-    mid_pos = (first_pos+sec_pos)/2
-    debug_print('Potential Center is: %d' % mid_pos)
-    sm.on_to_position(50, mid_pos)
-    
+    pos_dist = distance(first_pos,sec_pos)
+    steerlock = (pos_dist/2)
+    debug_print('Degrees to center: %d' % steerlock)
+    sm.on_for_degrees(25, steerlock)
+    limited_steerlock = steerlock * 0.5
+    debug_print('Limited Steerlock: %d' % limited_steerlock)
+    max_rot = round(limited_steerlock)
+    debug_print('Max Angle: %d' % limited_steerlock)
+    steer_info = {
+        'max_rotation': max_rot,
+        'center_position': sm.position,
+    }
 
-def steer(angle):
-    driver = Sound()
-    driver.speak('I Turn my wheel %d degrees.' % angle)
-    sm.on_for_degrees(50, angle)
+    return steer_info 
 
-def accel(speed = 0):
-    speed = speedlimiter(speed)
-    lm.on(speed)
-    rm.on(speed)
-    lm.on_for_seconds()
+STEER_INFO = calibrate_steering()
+MAX_ROTATION = STEER_INFO['max_rotation']
+CENTER_POSTION = STEER_INFO['center_position']   
+
+def steer(angle_value):
+    #driver = Sound()
+    #driver.speak('I Turn my wheel %d degrees.' % angle)
+    percent_angle = angle_value/100
+    steer_rotation = round(MAX_ROTATION*percent_angle)
+    #angle = anglelimiter(steer_rotation)
+    new_angle = CENTER_POSTION + steer_rotation
+    curr_angle = sm.position
+    angle = new_angle - curr_angle
+    sm.on_for_degrees(50, angle, block=False)
+
+def accel(speed_value = 0):
+    speed_percent = speed_value/100
+    new_speed = round(speed_percent*MAX_SPEED)
+    #speed = speedlimiter(speed)
+    dt.on(left_speed=SpeedNativeUnits(new_speed), right_speed=SpeedNativeUnits(new_speed))
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     debug_print('Connected to MQTT Broker')
     client.subscribe("test/#")
-    calibrate_steering()
 
 
 def on_message(client, userdata, msg):
@@ -112,17 +134,14 @@ def on_message(client, userdata, msg):
     debug_print(msg.payload.decode('utf-8'))
     message = json.loads(msg.payload.decode('utf-8'))
     print('Json Loaded')
-    if message.get("steering"):
-        print('Got Angle')
-        debug_print('Steeringangle: %d degrees.' % message.get("steering"))
-        steer(int(message.get("steering")))
-        print('Steeringangle: %d degrees.' % message.get("steering"))
-        debug_print('Steeringangle: %d degrees.' % message.get("steering"))
-    if message.get("speed"):
-        print('Got Speed')
-        debug_print('Accelerate to: %d percent.' % message.get("speed"))
-        accel(int(message.get("speed")))
-        print('Accelerate to: %d percent.' % message.get("speed"))
+    #if message.get("steering"):
+    steer(int(message.get("steering")))
+    print('Steeringangle: %d percent.' % message.get("steering"))
+    debug_print('Steeringangle: %d percent.' % message.get("steering"))
+    #if message.get("speed"):
+    debug_print('Accelerate to: %d percent.' % message.get("speed"))
+    accel(int(message.get("speed")))
+    print('Accelerate to: %d percent.' % message.get("speed"))
     print('Command by: %s' % message.get("hostname"))
     debug_print('Command by: %s' % message.get("hostname"))
 
