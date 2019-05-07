@@ -1,24 +1,18 @@
 #!/usr/bin/env python
-import signal
 import uuid
-import os
 import json
-from sys import exit
-
-#import datetime
 import time
-
-#from distutils.util import strtobool
+import logging
+import sys
 
 import paho.mqtt.client as mqtt
-import logging
 
 class Car(object):
     def __init__(self, car_name='', speed=0, steering=0, min_speed=-90, max_speed=90,min_steer=-90, max_steer=90, broker='localhost', port=1883, loglevel='WARNING'):
         self.name = self.generate_name(car_name)
         self.speed = speed
         self.steering = steering
-        self.topics = [('test/host',0),('{}/speed'.format(self.name),0),('{}/steering'.format(self.name),0)]
+        #self.topics = [('test/host',0),('{}/speed'.format(self.name),0),('{}/steering'.format(self.name),0)]
         self.MIN_SPEED = min_speed
         self.MAX_SPEED = max_speed
         self.MIN_STEER = min_steer
@@ -26,7 +20,7 @@ class Car(object):
         self.broker = broker
         self.port = port
 
-        logging.basicConfig(level=getattr(logging, loglevel.upper()))
+        logging.basicConfig(level=getattr(logging, loglevel.upper()),stream=sys.stdout)
         logger = logging.getLogger(__name__)
 
         self.mqtt_client = mqtt.Client(self.name)
@@ -37,7 +31,7 @@ class Car(object):
         self.mqtt_client.connect(host=self.broker, port=self.port, keepalive=60) # connect to the broker
 
         self.mqtt_client.loop_start()
-        self.mqtt_client.subscribe(self.topics)
+        #self.mqtt_client.subscribe(self.topics)
 
         logging.info("Car created as {}".format(self.name))
 
@@ -96,26 +90,3 @@ class Car(object):
         else:
             raise ValueError('Value is out of range MIN_STEER, MAX_STEER')
 
-
-def sigterm_handler(signal, frame):
-    lego.disconnect()
-    logging.info('Termination signal received, closing connection')
-    exit(0)
-
-
-def main():
-    signal.signal(signal.SIGTERM, sigterm_handler)
-    signal.signal(signal.SIGINT, sigterm_handler)
-
-    broker = os.getenv('MQTT_BROKER', 'localhost')
-    port =  int(os.getenv('MQTT_PORT', 1883))
-
-    lego = Car(broker=broker, port=port)
-    time.sleep(5)
-    lego.mqtt_client.subscribe([('test/host',0),('car/speed',0),('car/steering',0)])
-    time.sleep(60) 
-    lego.disconnect()
-    time.sleep(5)
-
-if __name__ == '__main__':
-    main()
