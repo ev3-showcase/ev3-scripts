@@ -10,5 +10,6 @@ setup(name='ev3car',
       packages=['ev3car'],
       install_requires=[
           'paho-mqtt',
+          'python-ev3dev2',
       ],
       zip_safe=False)

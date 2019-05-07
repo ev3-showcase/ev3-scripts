@@ -4,6 +4,7 @@ import json
 import time
 import logging
 import sys
+from ev3dev2.motor import LargeMotor, MediumMotor, MoveTank, OUTPUT_B, OUTPUT_C, OUTPUT_D, SpeedNativeUnits
 
 import paho.mqtt.client as mqtt
 
@@ -12,7 +13,6 @@ class Car(object):
         self.name = self.generate_name(car_name)
         self.speed = speed
         self.steering = steering
-        #self.topics = [('test/host',0),('{}/speed'.format(self.name),0),('{}/steering'.format(self.name),0)]
         self.MIN_SPEED = min_speed
         self.MAX_SPEED = max_speed
         self.MIN_STEER = min_steer
@@ -20,7 +20,11 @@ class Car(object):
         self.broker = broker
         self.port = port
 
-        logging.basicConfig(level=getattr(logging, loglevel.upper()),stream=sys.stdout)
+        self.lm = LargeMotor(OUTPUT_B)
+        self.dt = MoveTank(OUTPUT_B, OUTPUT_C)
+        self.sm = MediumMotor(OUTPUT_D)
+
+        logging.basicConfig(level=getattr(logging, loglevel.upper()),stream=sys.stderr)
         logger = logging.getLogger(__name__)
 
         self.mqtt_client = mqtt.Client(self.name)
@@ -31,7 +35,8 @@ class Car(object):
         self.mqtt_client.connect(host=self.broker, port=self.port, keepalive=60) # connect to the broker
 
         self.mqtt_client.loop_start()
-        #self.mqtt_client.subscribe(self.topics)
+
+        self.calibrate_steering()
 
         logging.info("Car created as {}".format(self.name))
 
@@ -68,7 +73,6 @@ class Car(object):
     def on_message(self, client, userdata, msg):
         logging.info("Message received")
         loging.debug("Message content: {}".format(msg.payload))
-        #self.accelerate(int(msg.payload))
 
     def __repr__(self):
         return("Car %s" % self.name)
@@ -90,3 +94,36 @@ class Car(object):
         else:
             raise ValueError('Value is out of range MIN_STEER, MAX_STEER')
 
+    def calibrate_steering(self):
+        steer_info = {'max_rotation': 0, 'center_position': 0}
+
+        # get max angle left (probably correct sides)
+        sm.on(10)
+        while not sm.is_overloaded:
+            sleep(0.01)
+        sm.off()
+        logging.info('First Lock Position: %d' % sm.position)
+        first_pos = sm.position
+
+        # get max angle right
+        sm.on(-10)
+        while not sm.is_overloaded:
+            sleep(0.01)
+        sm.off()
+        logging.info('Second Lock Position: %d' % sm.position)
+        sec_pos = sm.position
+        
+        # get the total steering per side, for this get dif between the two positions and halve it
+        max_steer_angle = (abs(first_pos,sec_pos)/2)
+        logging.debug('Degrees to center incl. flex: %d' % max_steer_angle)
+
+        # as we are currently at the max negative steering from determining sec_pos, using max_steer_angle should center the wheels
+        sm.on_for_degrees(25, max_steer_angle)
+        steer_info['center_position'] = sm.position
+        logging.info('Motor zeroes at position: %d' % steer_info['center_position'])
+
+        # halve the max steering degrees to correct flexing and play in mechanics
+        steer_info['max_rot'] = round(max_steer_angle * 0.5)
+        logging.info('Max steering angle: %d' % steer_info['max_rot'])
+    
+        return steer_info 
