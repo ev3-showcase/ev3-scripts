@@ -10,7 +10,7 @@ import signal
 import paho.mqtt.client as mqtt
 
 class Car(object):
-    def __init__(self, car_name='', broker='localhost', top_speed=0, simulation=False, port=1883, loglevel='WARNING'):
+    def __init__(self, car_name='', broker='localhost', top_speed=900, simulation=False, port=1883, loglevel='WARNING'):
         self.name = self.generate_name(car_name)
         self.speed = top_speed
         self.port = port
@@ -97,20 +97,20 @@ class Car(object):
 
     def calibrate_steering(self):
         # get max angle left (probably correct sides)
-        sm.on(10)
-        while not sm.is_overloaded:
+        self.sm.on(10)
+        while not self.sm.is_overloaded:
             sleep(0.01)
-        sm.off()
+        self.sm.off()
         logging.info('First Lock Position: %d' % sm.position)
-        first_pos = sm.position
+        first_pos = self.sm.position
 
         # get max angle right
-        sm.on(-10)
-        while not sm.is_overloaded:
+        self.sm.on(-10)
+        while not self.sm.is_overloaded:
             sleep(0.01)
-        sm.off()
+        self.sm.off()
         logging.info('Second Lock Position: %d' % sm.position)
-        sec_pos = sm.position
+        sec_pos = self.sm.position
         
         # get the total steering per side
         # for this get dif between the two positions and halve it
@@ -128,17 +128,18 @@ class Car(object):
         logging.info('Max steering angle: {}'.format(self.max_steer_angle))
 
     def steer(self, rel_angle_perc):
-        # calculate destination steering angle
-        # angle is given in percentages
-        new_angle_abs = self.steering_center_pos + (self.max_steer_angle * rel_angle_perc/100)
+        # calculates destination steering angle
+        # turning distance is given in percentages
+        new_angle_abs = (self.max_steer_angle * rel_angle_perc/100) - self.sm.position
         logging.info('Steering issued for {} degrees'.format(new_angle_abs))
 
         # as new_angle_abs is  the destination and for_degrees will turn FOR a certain amount
         # of degrees, remove the current position from the destination position and turn
-        self.sm.on_for_degrees(50, round(new_angle_abs - sm.position), block=False)
+        self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
 
-    def accel(self, accel_perc):
+    def set_speed(self, dest_speed_perc):
         # acceleration is given in percentages
-        dest_speed = self.top_speed * accel_perc/100
+        dest_speed = self.top_speed * dest_speed_perc/100
         # acceleration happens by giving the destination speed
         self.dt.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
+        logger.info("Speed was set to {}".format(dest_speed))

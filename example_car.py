@@ -7,12 +7,15 @@ port =  int(os.getenv('MQTT_PORT', 1883))
 
 tp_speed = 'car/speed'
 tp_steer = 'car/steering'
-lego = Car(broker=broker, port=port, simulation=True, loglevel='DEBUG')
+ev3car = Car(broker=broker, port=port, simulation=True, loglevel='DEBUG')
 
 def on_speed(client, userdata, msg):
+    try: 
+        ev3car.set_speed(int(msg.payload.decode('utf-8')))
+    except ValueError
+       logger.error("Invalid speed")
     # here you could now access the cars properties and change e.g. the speed or turn on various sensors`
     # decode to utf8 to avoid getting binary strings
-    print("Received speed {}".format(msg.payload.decode('utf-8')))
 
 def on_steer(client, userdata, msg):
     # that's up to you now
@@ -20,10 +23,10 @@ def on_steer(client, userdata, msg):
 
 def main():
     # subscribe to the topics you want to subscribe
-    lego.mqtt_client.subscribe([(tp_speed,0),(tp_steer,0)])
+    ev3car.mqtt_client.subscribe([(tp_speed,0),(tp_steer,0)])
     # apply callback to issue actions when certain messages arrive
-    lego.mqtt_client.message_callback_add(tp_speed, on_speed)
-    lego.mqtt_client.message_callback_add(tp_steer, on_speed)
+    ev3car.mqtt_client.message_callback_add(tp_speed, on_speed)
+    ev3car.mqtt_client.message_callback_add(tp_steer, on_steer)
 
     # do nothing for 60 seconds and wait for incoming messages which are
     # processed in the background
