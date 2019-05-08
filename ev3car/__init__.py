@@ -5,24 +5,22 @@ import time
 import logging
 import sys
 from ev3dev2.motor import LargeMotor, MediumMotor, MoveTank, OUTPUT_B, OUTPUT_C, OUTPUT_D, SpeedNativeUnits
+import signal
 
 import paho.mqtt.client as mqtt
 
 class Car(object):
-    def __init__(self, car_name='', speed=0, steering=0, min_speed=-90, max_speed=90,min_steer=-90, max_steer=90, broker='localhost', port=1883, loglevel='WARNING'):
+    def __init__(self, car_name='', broker='localhost', top_speed=0, simulation=False, port=1883, loglevel='WARNING'):
         self.name = self.generate_name(car_name)
-        self.speed = speed
-        self.steering = steering
-        self.MIN_SPEED = min_speed
-        self.MAX_SPEED = max_speed
-        self.MIN_STEER = min_steer
-        self.MAX_STEER = max_steer
-        self.broker = broker
+        self.speed = top_speed
         self.port = port
+        self.simulation = simulation
+        self.broker = broker
 
-        self.lm = LargeMotor(OUTPUT_B)
-        self.dt = MoveTank(OUTPUT_B, OUTPUT_C)
-        self.sm = MediumMotor(OUTPUT_D)
+        # car parameters
+        self.max_steer_angle = 0
+        self.steering_center_pos = 0
+        self.top_speed = top_speed
 
         logging.basicConfig(level=getattr(logging, loglevel.upper()),stream=sys.stderr)
         logger = logging.getLogger(__name__)
@@ -31,12 +29,22 @@ class Car(object):
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.on_disconnect = self.on_disconnect
+        self.mqtt_client.enable_logger(logger=logger)
 
         self.mqtt_client.connect(host=self.broker, port=self.port, keepalive=60) # connect to the broker
 
         self.mqtt_client.loop_start()
 
-        self.calibrate_steering()
+        # ensure proper error handling
+        signal.signal(signal.SIGTERM, self.sigterm_handler)
+        signal.signal(signal.SIGINT, self.sigterm_handler)
+
+        # initialize the motor objects only if not running as sim, otherwise crashes occure when the motor is not found
+        if not self.simulation:
+            self.lm = LargeMotor(OUTPUT_B)
+            self.dt = MoveTank(OUTPUT_B, OUTPUT_C)
+            self.sm = MediumMotor(OUTPUT_D)
+            self.calibrate_steering()
 
         logging.info("Car created as {}".format(self.name))
 
@@ -47,13 +55,16 @@ class Car(object):
             return 'car-' + uuid.uuid4().hex.upper()[0:6]
 
     def disconnect(self):
+        self.mqtt_client.loop_stop()
         self.mqtt_client.disconnect()
+        # I'm almost sure this is a totally wrong thing to do, but... It seems to work.
+        exit(0)
 
     def on_connect(self, mqtt_client, userdata, flags, rc):
         if rc==0:
             self.connected_flag=True
             logging.info("Successful connection with rc {}".format(rc))
-            self.mqtt_client.subscribe(self.topics)
+            #self.mqtt_client.subscribe(self.topics)
         else:
             logging.critical("Connection failed with rc {}".format(rc))
 
@@ -80,23 +91,11 @@ class Car(object):
     def _str_(self):
         return("%s, %d" % self.name, self.speed)
 
-    def accelerate(self, speed):
-        if speed in range(self.MIN_SPEED, self.MAX_SPEED):
-            logging.debug("Previous speed was {}".format(self.speed))
-            self.speed = speed
-            logging.info("Speed set to {}".format(self.speed))
-        else:
-            raise ValueError('Value is out of range MIN_SPEED, MAX_SPEED')
-
-    def steer(self, steering):
-        if steering in range(self.MIN_STEER, self.MAX_STEER):
-            self.steering = steering
-        else:
-            raise ValueError('Value is out of range MIN_STEER, MAX_STEER')
+    def sigterm_handler(self, signal, frame):
+        self.disconnect()
+        logging.info('Termination signal received, closing connection')
 
     def calibrate_steering(self):
-        steer_info = {'max_rotation': 0, 'center_position': 0}
-
         # get max angle left (probably correct sides)
         sm.on(10)
         while not sm.is_overloaded:
@@ -113,17 +112,33 @@ class Car(object):
         logging.info('Second Lock Position: %d' % sm.position)
         sec_pos = sm.position
         
-        # get the total steering per side, for this get dif between the two positions and halve it
-        max_steer_angle = (abs(first_pos,sec_pos)/2)
-        logging.debug('Degrees to center incl. flex: %d' % max_steer_angle)
+        # get the total steering per side
+        # for this get dif between the two positions and halve it
+        temp_steer_angle = (abs(first_pos,sec_pos)/2)
+        logging.debug('Degrees to center incl. flex: %d' % temp_steer_angle)
 
-        # as we are currently at the max negative steering from determining sec_pos, using max_steer_angle should center the wheels
-        sm.on_for_degrees(25, max_steer_angle)
-        steer_info['center_position'] = sm.position
-        logging.info('Motor zeroes at position: %d' % steer_info['center_position'])
+        # as we are currently at the max negative steering from determining sec_pos 
+        # using max_steer_angle should center the wheels
+        sm.on_for_degrees(25, temp_steer_angle)
+        self.steering_center_pos = sm.position
+        logging.info('Motor zeroes at position {}'.format(self.steering_center_pos))
 
         # halve the max steering degrees to correct flexing and play in mechanics
-        steer_info['max_rot'] = round(max_steer_angle * 0.5)
-        logging.info('Max steering angle: %d' % steer_info['max_rot'])
-    
-        return steer_info 
+        self.max_steer_angle = round(temp_steer_angle * 0.5)
+        logging.info('Max steering angle: {}'.format(self.max_steer_angle))
+
+    def steer(self, rel_angle_perc):
+        # calculate destination steering angle
+        # angle is given in percentages
+        new_angle_abs = self.steering_center_pos + (self.max_steer_angle * rel_angle_perc/100)
+        logging.info('Steering issued for {} degrees'.format(new_angle_abs))
+
+        # as new_angle_abs is  the destination and for_degrees will turn FOR a certain amount
+        # of degrees, remove the current position from the destination position and turn
+        self.sm.on_for_degrees(50, round(new_angle_abs - sm.position), block=False)
+
+    def accel(self, accel_perc):
+        # acceleration is given in percentages
+        dest_speed = self.top_speed * accel_perc/100
+        # acceleration happens by giving the destination speed
+        self.dt.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
