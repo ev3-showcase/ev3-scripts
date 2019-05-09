@@ -2,6 +2,7 @@
 import uuid
 import json
 import time
+from time import sleep
 import logging
 import sys
 from ev3dev2.motor import LargeMotor, MediumMotor, MoveTank, OUTPUT_B, OUTPUT_C, OUTPUT_D, SpeedNativeUnits
@@ -32,7 +33,7 @@ class Car(object):
         self.mqtt_client.enable_logger(logger=logger)
 
         self.mqtt_client.connect(host=self.broker, port=self.port, keepalive=60) # connect to the broker
-
+    
         self.mqtt_client.loop_start()
 
         # ensure proper error handling
@@ -101,7 +102,7 @@ class Car(object):
         while not self.sm.is_overloaded:
             sleep(0.01)
         self.sm.off()
-        logging.info('First Lock Position: %d' % sm.position)
+        logging.info('First Lock Position: %d' % self.sm.position)
         first_pos = self.sm.position
 
         # get max angle right
@@ -109,18 +110,18 @@ class Car(object):
         while not self.sm.is_overloaded:
             sleep(0.01)
         self.sm.off()
-        logging.info('Second Lock Position: %d' % sm.position)
+        logging.info('Second Lock Position: %d' % self.sm.position)
         sec_pos = self.sm.position
         
         # get the total steering per side
         # for this get dif between the two positions and halve it
-        temp_steer_angle = (abs(first_pos,sec_pos)/2)
+        temp_steer_angle = (abs(first_pos-sec_pos)/2)
         logging.debug('Degrees to center incl. flex: %d' % temp_steer_angle)
 
         # as we are currently at the max negative steering from determining sec_pos 
         # using max_steer_angle should center the wheels
-        sm.on_for_degrees(25, temp_steer_angle)
-        self.steering_center_pos = sm.position
+        self.sm.on_for_degrees(25, temp_steer_angle)
+        self.steering_center_pos = self.sm.position
         logging.info('Motor zeroes at position {}'.format(self.steering_center_pos))
 
         # halve the max steering degrees to correct flexing and play in mechanics
