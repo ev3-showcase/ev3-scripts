@@ -2,7 +2,6 @@
 import uuid
 import json
 import time
-from time import sleep
 import logging
 import sys
 from ev3dev2.motor import LargeMotor, MediumMotor, MoveTank, OUTPUT_B, OUTPUT_C, OUTPUT_D, SpeedNativeUnits
@@ -100,7 +99,7 @@ class Car(object):
         # get max angle left (probably correct sides)
         self.sm.on(10)
         while not self.sm.is_overloaded:
-            sleep(0.01)
+            time.sleep(0.01)
         self.sm.off()
         logging.info('First Lock Position: %d' % self.sm.position)
         first_pos = self.sm.position
@@ -108,7 +107,7 @@ class Car(object):
         # get max angle right
         self.sm.on(-10)
         while not self.sm.is_overloaded:
-            sleep(0.01)
+            time.sleep(0.01)
         self.sm.off()
         logging.info('Second Lock Position: %d' % self.sm.position)
         sec_pos = self.sm.position
@@ -136,11 +135,13 @@ class Car(object):
 
         # as new_angle_abs is  the destination and for_degrees will turn FOR a certain amount
         # of degrees, remove the current position from the destination position and turn
-        self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
+        if not self.simulation:
+            self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
 
     def set_speed(self, dest_speed_perc):
         # acceleration is given in percentages
         dest_speed = self.top_speed * dest_speed_perc/100
         # acceleration happens by giving the destination speed
-        self.dt.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
+        if not self.simulation:
+            self.dt.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
         logger.info("Speed was set to {}".format(dest_speed))
