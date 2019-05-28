@@ -25,7 +25,7 @@ class Car(object):
         logging.basicConfig(level=getattr(logging, loglevel.upper()),stream=sys.stderr)
         logger = logging.getLogger(__name__)
 
-        self.mqtt_client = mqtt.Client(self.name)
+        self.mqtt_client = mqtt.Client(self.name,transport='websockets')
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.on_disconnect = self.on_disconnect
@@ -123,6 +123,19 @@ class Car(object):
         self.steering_center_pos = self.sm.position
         logging.info('Motor zeroes at position {}'.format(self.steering_center_pos))
 
+        # Oversteers on way back due to drag on tires. Returns to centerposition afterwards
+        try:
+            val = int(temp_steer_angle)
+            if(val > 0):
+                logging.debug('Steering Direction  is Positive, correct Tire angle now.')
+                self.sm.on_for_degrees(25, 40)
+                self.sm.on_for_degrees(25, -40)
+            else:
+                logging.debug('Steering Direction  is Negative, correct Tire angle now.')
+                self.sm.on_for_degrees(25, -40)
+                self.sm.on_for_degrees(25, 40)
+        except ValueError:
+            logger.error("Invalid Steering Angle")
         # halve the max steering degrees to correct flexing and play in mechanics
         self.max_steer_angle = round(temp_steer_angle * 0.5)
         logging.info('Max steering angle: {}'.format(self.max_steer_angle))
@@ -130,13 +143,43 @@ class Car(object):
     def steer(self, rel_angle_perc):
         # calculates destination steering angle
         # turning distance is given in percentages
-        new_angle_abs = (self.max_steer_angle * rel_angle_perc/100) - self.sm.position
+        logging.debug('Steering Input Value: %d' % rel_angle_perc)
+        percent_angle = rel_angle_perc/100
+        steer_rotation = round(self.max_steer_angle*percent_angle)
+        logging.debug('Max Steering Angle: %d' % self.max_steer_angle)
+        logging.debug('Resulting Rotation in Degrees %d' % steer_rotation)
+        #angle = anglelimiter(steer_rotation)
+        logging.debug('Calculated Center Position %d' % self.steering_center_pos)
+        new_angle = self.steering_center_pos + steer_rotation
+        logging.debug('New Position %d' % new_angle)
+        curr_angle = self.sm.position
+        logging.debug('Current Position %d' % self.sm.position)
+        new_angle_abs = new_angle - curr_angle
+        logging.debug('Actual Steering Delta %d' % new_angle_abs)
+        #sm.on_for_degrees(50, angle, block=False)
+
+        #new_angle_abs = (self.max_steer_angle * rel_angle_perc/100) - self.sm.position
         logging.info('Steering issued for {} degrees'.format(new_angle_abs))
 
         # as new_angle_abs is  the destination and for_degrees will turn FOR a certain amount
         # of degrees, remove the current position from the destination position and turn
         if not self.simulation:
-            self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
+            #self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
+            self.sm.on_for_degrees(50, new_angle_abs)
+            # Oversteers on way back due to drag on tires. Returns to centerposition afterwards
+            try:
+                val = int(new_angle_abs)
+                if(val > 0):
+                    logging.debug('Steering Direction  is Positive, correct Tire angle now.')
+                    self.sm.on_for_degrees(25, 40)
+                    self.sm.on_for_degrees(25, -40)
+                else:
+                    logging.debug('Steering Direction  is Negative, correct Tire angle now.')
+                    self.sm.on_for_degrees(25, -40)
+                    self.sm.on_for_degrees(25, 40)
+            except ValueError:
+                logger.error("Invalid Steering Angle")
+                
 
     def set_speed(self, dest_speed_perc):
         # acceleration is given in percentages
@@ -144,4 +187,4 @@ class Car(object):
         # acceleration happens by giving the destination speed
         if not self.simulation:
             self.dt.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
-        logger.info("Speed was set to {}".format(dest_speed))
+        logging.info("Speed was set to {}".format(dest_speed))

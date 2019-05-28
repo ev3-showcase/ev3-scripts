@@ -2,9 +2,16 @@
 from ev3car import Car
 import os
 import time
+import logging
+import sys
 
-broker = os.getenv('MQTT_BROKER', 'localhost')
-port =  int(os.getenv('MQTT_PORT', 1883))
+
+loglevel = 'debug'
+logging.basicConfig(level=getattr(logging, loglevel.upper()),stream=sys.stderr)
+logger = logging.getLogger(__name__)
+
+broker = os.getenv('MQTT_BROKER', 'message-broker-mqtt-websocket-fk-sc.aotp012.mcs-paas.io')
+port =  int(os.getenv('MQTT_PORT', 80))
 
 tp_speed = 'car/speed'
 tp_steer = 'car/steering'
