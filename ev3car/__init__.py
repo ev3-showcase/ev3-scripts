@@ -19,6 +19,8 @@ class Car(object):
 
         # car parameters
         self.max_steer_angle = 0
+        if self.simulation:
+            self.max_steer_angle = 180
         self.steering_center_pos = 0
         self.top_speed = top_speed
 
@@ -152,8 +154,11 @@ class Car(object):
         logging.debug('Calculated Center Position %d' % self.steering_center_pos)
         new_angle = self.steering_center_pos + steer_rotation
         logging.debug('New Position %d' % new_angle)
-        curr_angle = self.sm.position
-        logging.debug('Current Position %d' % self.sm.position)
+        if not self.simulation:
+            curr_angle = self.sm.position
+            logging.debug('Current Position %d' % self.sm.position)
+        else:
+            curr_angle = self.steering_center_pos
         new_angle_abs = new_angle - curr_angle
         logging.debug('Actual Steering Delta %d' % new_angle_abs)
         #sm.on_for_degrees(50, angle, block=False)
@@ -165,9 +170,9 @@ class Car(object):
         # of degrees, remove the current position from the destination position and turn
         if not self.simulation:
             #self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
-            self.sm.on_for_degrees(50, new_angle_abs)
+            self.sm.on_for_degrees(50, new_angle_abs, block=False)
             # Oversteers on way back due to drag on tires. Returns to centerposition afterwards
-            try:
+            '''try:
                 val = int(new_angle_abs)
                 if(val > 0):
                     logging.debug('Steering Direction  is Positive, correct Tire angle now.')
@@ -178,7 +183,7 @@ class Car(object):
                     self.sm.on_for_degrees(25, -40)
                     self.sm.on_for_degrees(25, 40)
             except ValueError:
-                logger.error("Invalid Steering Angle")
+                logger.error("Invalid Steering Angle")'''
                 
 
     def set_speed(self, dest_speed_perc):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 from ev3car import Car
 import os
 import time
@@ -15,7 +16,7 @@ port =  int(os.getenv('MQTT_PORT', 80))
 
 tp_speed = 'car/speed'
 tp_steer = 'car/steering'
-ev3car = Car(broker=broker, port=port, simulation=False, loglevel='DEBUG')
+ev3car = Car(broker=broker, port=port, simulation=True, loglevel=loglevel)
 
 def on_speed(client, userdata, msg):
     try: 
