@@ -1,0 +1,5 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "ev3devBrowser.download.include": "{**/*.py}"
+}

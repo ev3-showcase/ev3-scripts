@@ -1,0 +1,17 @@
+{
+    "version": "0.0.1",
+    "configurations":[
+        {
+            "name": "Download and Run Current File",
+            "type": "ev3devBrowser",
+            "request": "launch",
+            "program": "/home/robot/${workspaceFolderBasename}/${relativeFile}"
+        },
+        {
+            "name": "Download and Run Car",
+            "type": "ev3devBrowser",
+            "request": "launch",
+            "program": "/home/robot/${workspaceFolderBasename}/example_car.py"
+        }
+    ]
+}
