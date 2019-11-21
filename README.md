@@ -14,3 +14,12 @@ After Calibration has finished, the car will show an infomessage on the screen t
 ##Troubleshooting
 - In case the car does not accept new messages it might have hung up, you need to stop the program and restart it manually. To Stop the program execution simply click the Back-button on the left side under the screen.  (Not the Control-Cross-Buttons) To restart the Program follow point 3 of usage.
 
+
+## Building Instructions
+
+| Port | Motor |
+| ---- | ----- |
+| A    | Main motor left Side |
+| B    | Mani motor right Side |
+| C    | steering  |
+| ...  | Light Sensor |

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import uuid
 import json
 import time
@@ -41,9 +41,8 @@ class Car(object):
 
         # initialize the motor objects only if not running as sim, otherwise crashes occure when the motor is not found
         if not self.simulation:
-            self.lm = LargeMotor(OUTPUT_B)
-            self.dt = MoveTank(OUTPUT_B, OUTPUT_C)
-            self.sm = MediumMotor(OUTPUT_D)
+            self.mainMotors = MoveTank(OUTPUT_B, OUTPUT_C)
+            self.steeringMotor = LargeMotor(OUTPUT_D)
             self.calibrate_steering()
 
         logging.info("Car created as {}".format(self.name))
@@ -83,7 +82,7 @@ class Car(object):
 
     def on_message(self, client, userdata, msg):
         logging.info("Message received")
-        loging.debug("Message content: {}".format(msg.payload))
+        logging.debug("Message content: {}".format(msg.payload))
 
     def __repr__(self):
         return("Car %s" % self.name)
@@ -96,21 +95,21 @@ class Car(object):
         logging.info('Termination signal received, closing connection')
 
     def calibrate_steering(self):
-        # get max angle left (probably correct sides)
-        self.sm.on(10)
-        while not self.sm.is_overloaded:
-            time.sleep(0.01)
-        self.sm.off()
-        logging.info('First Lock Position: %d' % self.sm.position)
-        first_pos = self.sm.position
-
         # get max angle right
-        self.sm.on(-10)
-        while not self.sm.is_overloaded:
+        self.steeringMotor.on(60)
+        while not self.steeringMotor.is_overloaded:
             time.sleep(0.01)
-        self.sm.off()
-        logging.info('Second Lock Position: %d' % self.sm.position)
-        sec_pos = self.sm.position
+        logging.info('First Lock Position: %d' % self.steeringMotor.position)
+        first_pos = self.steeringMotor.position
+
+        # get max angle left
+        self.steeringMotor.on(-60)
+        # Move steering to the other side and make sure that the motor has moved and is not blocked from moving to the right
+        while not (self.steeringMotor.is_overloaded and abs(first_pos - self.steeringMotor.position) > 100) :
+            time.sleep(0.01)
+        self.steeringMotor.off()
+        logging.info('Second Lock Position: %d' % self.steeringMotor.position)
+        sec_pos = self.steeringMotor.position
         
         # get the total steering per side
         # for this get dif between the two positions and halve it
@@ -119,21 +118,21 @@ class Car(object):
 
         # as we are currently at the max negative steering from determining sec_pos 
         # using max_steer_angle should center the wheels
-        self.sm.on_for_degrees(25, temp_steer_angle)
-        self.steering_center_pos = self.sm.position
+        self.steeringMotor.on_for_degrees(25, temp_steer_angle)
+        self.steering_center_pos = self.steeringMotor.position
         logging.info('Motor zeroes at position {}'.format(self.steering_center_pos))
 
         # Oversteers on way back due to drag on tires. Returns to centerposition afterwards
         try:
             val = int(temp_steer_angle)
             if(val > 0):
-                logging.debug('Steering Direction  is Positive, correct Tire angle now.')
-                self.sm.on_for_degrees(25, 40)
-                self.sm.on_for_degrees(25, -40)
+                logging.debug('Steering Direction is Positive, correct Tire angle now.')
+                self.steeringMotor.on_for_degrees(25, 40)
+                self.steeringMotor.on_for_degrees(25, -40)
             else:
-                logging.debug('Steering Direction  is Negative, correct Tire angle now.')
-                self.sm.on_for_degrees(25, -40)
-                self.sm.on_for_degrees(25, 40)
+                logging.debug('Steering Direction is Negative, correct Tire angle now.')
+                self.steeringMotor.on_for_degrees(25, -40)
+                self.steeringMotor.on_for_degrees(25, 40)
         except ValueError:
             logger.error("Invalid Steering Angle")
         # halve the max steering degrees to correct flexing and play in mechanics
@@ -152,8 +151,8 @@ class Car(object):
         logging.debug('Calculated Center Position %d' % self.steering_center_pos)
         new_angle = self.steering_center_pos + steer_rotation
         logging.debug('New Position %d' % new_angle)
-        curr_angle = self.sm.position
-        logging.debug('Current Position %d' % self.sm.position)
+        curr_angle = self.steeringMotor.position
+        logging.debug('Current Position %d' % self.steeringMotor.position)
         new_angle_abs = new_angle - curr_angle
         logging.debug('Actual Steering Delta %d' % new_angle_abs)
         #sm.on_for_degrees(50, angle, block=False)
@@ -165,18 +164,18 @@ class Car(object):
         # of degrees, remove the current position from the destination position and turn
         if not self.simulation:
             #self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
-            self.sm.on_for_degrees(50, new_angle_abs)
+            self.steeringMotor.on_for_degrees(50, new_angle_abs)
             # Oversteers on way back due to drag on tires. Returns to centerposition afterwards
             try:
                 val = int(new_angle_abs)
                 if(val > 0):
                     logging.debug('Steering Direction  is Positive, correct Tire angle now.')
-                    self.sm.on_for_degrees(25, 40)
-                    self.sm.on_for_degrees(25, -40)
+                    self.steeringMotor.on_for_degrees(25, 40)
+                    self.steeringMotor.on_for_degrees(25, -40)
                 else:
                     logging.debug('Steering Direction  is Negative, correct Tire angle now.')
-                    self.sm.on_for_degrees(25, -40)
-                    self.sm.on_for_degrees(25, 40)
+                    self.steeringMotor.on_for_degrees(25, -40)
+                    self.steeringMotor.on_for_degrees(25, 40)
             except ValueError:
                 logger.error("Invalid Steering Angle")
                 
@@ -186,5 +185,5 @@ class Car(object):
         dest_speed = self.top_speed * dest_speed_perc/100
         # acceleration happens by giving the destination speed
         if not self.simulation:
-            self.dt.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
+            self.mainMotors.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
         logging.info("Speed was set to {}".format(dest_speed))
