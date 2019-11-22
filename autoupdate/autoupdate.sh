@@ -29,7 +29,7 @@ fi
 wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh
 if [ $? -eq 0 ] ; then
     # If the file exists download and overwrite
-    wget -O autoupdate.bash https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh
+    wget -O autoupdate.sh https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh
 fi
 chmod u+x autoupdate.sh
 
