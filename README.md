@@ -17,15 +17,21 @@ After Calibration has finished, the car will show an infomessage on the screen t
 
 ## Building Instructions
 
-| Port | Motor |
-| ---- | ----- |
-| A    | Main motor left Side |
+| Port | Motor                 |
+| ---- | --------------------- |
+| A    | Main motor left Side  |
 | B    | Mani motor right Side |
-| C    | steering  |
-| ...  | Light Sensor |
+| C    | steering              |
+| ...  | Light Sensor          |
+
+Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/getting-started/basics/
 
 ## Raspberry with PiBrick setup 
 
 1. Flash the SD Card ([Link](https://www.ev3dev.org/docs/getting-started/))
 2. Setup Wifi ([Link](https://www.ev3dev.org/docs/tutorials/setting-up-wifi-using-the-command-line/))
 3. Use the [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
+
+## Auto Update
+
+Service: https://medium.com/@benmorel/creating-a-linux-service-with-systemd-611b5c8b91d6
