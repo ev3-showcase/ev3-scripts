@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-import uuid
 import json
-import time
 import logging
-import sys
-from ev3dev2.motor import LargeMotor, MediumMotor, MoveTank, OUTPUT_B, OUTPUT_C, OUTPUT_D, SpeedNativeUnits
 import signal
+import sys
+import time
+import uuid
 
 import paho.mqtt.client as mqtt
+from ev3dev2.motor import (OUTPUT_B, OUTPUT_C, OUTPUT_D, LargeMotor,
+                           MediumMotor, MoveTank, SpeedNativeUnits)
+
 
 class Car(object):
     def __init__(self, car_name='', broker='localhost', top_speed=900, simulation=False, port=1883, loglevel='WARNING'):
@@ -22,17 +24,20 @@ class Car(object):
         self.steering_center_pos = 0
         self.top_speed = top_speed
 
-        logging.basicConfig(level=getattr(logging, loglevel.upper()),stream=sys.stderr)
+        logging.basicConfig(level=getattr(
+            logging, loglevel.upper()), stream=sys.stderr)
         logger = logging.getLogger(__name__)
 
-        self.mqtt_client = mqtt.Client(self.name,transport='websockets')
+        self.mqtt_client = mqtt.Client(self.name, transport='websockets')
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.on_disconnect = self.on_disconnect
         self.mqtt_client.enable_logger(logger=logger)
 
-        self.mqtt_client.connect(host=self.broker, port=self.port, keepalive=60) # connect to the broker
-    
+        # connect to the broker
+        self.mqtt_client.connect(
+            host=self.broker, port=self.port, keepalive=60)
+
         self.mqtt_client.loop_start()
 
         # ensure proper error handling
@@ -60,10 +65,10 @@ class Car(object):
         exit(0)
 
     def on_connect(self, mqtt_client, userdata, flags, rc):
-        if rc==0:
-            self.connected_flag=True
+        if rc == 0:
+            self.connected_flag = True
             logging.info("Successful connection with rc {}".format(rc))
-            #self.mqtt_client.subscribe(self.topics)
+            # self.mqtt_client.subscribe(self.topics)
         else:
             logging.critical("Connection failed with rc {}".format(rc))
 
@@ -75,10 +80,12 @@ class Car(object):
             else:
                 if rc >= 1:
                     error_msg = self.getErrorString(rc)
-                    logging.error("disconnect occurred due to {}. Will attempt to reconnect".format(error_msg))
+                    logging.error(
+                        "disconnect occurred due to {}. Will attempt to reconnect".format(error_msg))
                     mqtt_client.reconnect()
         except Exception as e:
-            logging.error("Error occurred in disconnect callback with error {}", str(e), exc_info=True)
+            logging.error(
+                "Error occurred in disconnect callback with error {}", str(e), exc_info=True)
 
     def on_message(self, client, userdata, msg):
         logging.info("Message received")
@@ -105,32 +112,35 @@ class Car(object):
         # get max angle left
         self.steeringMotor.on(-60)
         # Move steering to the other side and make sure that the motor has moved and is not blocked from moving to the right
-        while not (self.steeringMotor.is_overloaded and abs(first_pos - self.steeringMotor.position) > 100) :
+        while not (self.steeringMotor.is_overloaded and abs(first_pos - self.steeringMotor.position) > 100):
             time.sleep(0.01)
         self.steeringMotor.off()
         logging.info('Second Lock Position: %d' % self.steeringMotor.position)
         sec_pos = self.steeringMotor.position
-        
+
         # get the total steering per side
         # for this get dif between the two positions and halve it
         temp_steer_angle = (abs(first_pos-sec_pos)/2)
         logging.debug('Degrees to center incl. flex: %d' % temp_steer_angle)
 
-        # as we are currently at the max negative steering from determining sec_pos 
+        # as we are currently at the max negative steering from determining sec_pos
         # using max_steer_angle should center the wheels
         self.steeringMotor.on_for_degrees(25, temp_steer_angle)
         self.steering_center_pos = self.steeringMotor.position
-        logging.info('Motor zeroes at position {}'.format(self.steering_center_pos))
+        logging.info('Motor zeroes at position {}'.format(
+            self.steering_center_pos))
 
         # Oversteers on way back due to drag on tires. Returns to centerposition afterwards
         try:
             val = int(temp_steer_angle)
             if(val > 0):
-                logging.debug('Steering Direction is Positive, correct Tire angle now.')
+                logging.debug(
+                    'Steering Direction is Positive, correct Tire angle now.')
                 self.steeringMotor.on_for_degrees(25, 40)
                 self.steeringMotor.on_for_degrees(25, -40)
             else:
-                logging.debug('Steering Direction is Negative, correct Tire angle now.')
+                logging.debug(
+                    'Steering Direction is Negative, correct Tire angle now.')
                 self.steeringMotor.on_for_degrees(25, -40)
                 self.steeringMotor.on_for_degrees(25, 40)
         except ValueError:
@@ -148,7 +158,8 @@ class Car(object):
         logging.debug('Max Steering Angle: %d' % self.max_steer_angle)
         logging.debug('Resulting Rotation in Degrees %d' % steer_rotation)
         #angle = anglelimiter(steer_rotation)
-        logging.debug('Calculated Center Position %d' % self.steering_center_pos)
+        logging.debug('Calculated Center Position %d' %
+                      self.steering_center_pos)
         new_angle = self.steering_center_pos + steer_rotation
         logging.debug('New Position %d' % new_angle)
         curr_angle = self.steeringMotor.position
@@ -169,21 +180,23 @@ class Car(object):
             try:
                 val = int(new_angle_abs)
                 if(val > 0):
-                    logging.debug('Steering Direction  is Positive, correct Tire angle now.')
+                    logging.debug(
+                        'Steering Direction  is Positive, correct Tire angle now.')
                     self.steeringMotor.on_for_degrees(25, 40)
                     self.steeringMotor.on_for_degrees(25, -40)
                 else:
-                    logging.debug('Steering Direction  is Negative, correct Tire angle now.')
+                    logging.debug(
+                        'Steering Direction  is Negative, correct Tire angle now.')
                     self.steeringMotor.on_for_degrees(25, -40)
                     self.steeringMotor.on_for_degrees(25, 40)
             except ValueError:
                 logger.error("Invalid Steering Angle")
-                
 
     def set_speed(self, dest_speed_perc):
         # acceleration is given in percentages
         dest_speed = self.top_speed * dest_speed_perc/100
         # acceleration happens by giving the destination speed
         if not self.simulation:
-            self.mainMotors.on(left_speed=SpeedNativeUnits(dest_speed), right_speed=SpeedNativeUnits(dest_speed))
+            self.mainMotors.on(left_speed=SpeedNativeUnits(
+                dest_speed), right_speed=SpeedNativeUnits(dest_speed))
         logging.info("Speed was set to {}".format(dest_speed))
