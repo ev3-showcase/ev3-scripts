@@ -9,6 +9,13 @@ if [ $? -eq 0 ] ; then
     wget -O car.py https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/example_car.py
 fi
 
+mkdir ev3car
+wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/ev3car/__init__.py
+if [ $? -eq 0 ] ; then
+    # If the file exists download and overwrite
+    wget -O ./ev3car/__init__.py https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/ev3car/__init__.py
+fi
+
 # Autoinstall requirements
 #wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
 #if [ $? -eq 0 ] ; then
