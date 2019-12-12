@@ -1,0 +1,14 @@
+[Unit]
+Description=Car service for starting the remote controlled car
+After=network-online.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=robot
+WorkingDirectory=/home/robot/autorun
+ExecStart=/home/robot/autorun/autoupdate.sh
+
+[Install]
+WantedBy=multi-user.target
