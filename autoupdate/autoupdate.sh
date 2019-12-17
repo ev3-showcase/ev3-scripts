@@ -33,7 +33,8 @@ if [ $? -eq 0 ] ; then
 fi
 chmod u+x autoupdate.sh
 
-/usr/bin/python3 car.py
+chmod +x car.py
+brickrun ./car.py
 
 }
 
