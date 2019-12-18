@@ -23,7 +23,7 @@ fi
 #    wget -O requirements.txt https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
 #fi
 #
-#pip3 install -r requirements.txt
+#python -m pip install -r requirements.txt
 
 # Update the autoupdate script itself
 wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh

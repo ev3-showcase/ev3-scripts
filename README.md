@@ -29,11 +29,14 @@ Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/g
 ## Raspberry with PiBrick setup 
 
 1. Flash the SD Card ([Link](https://www.ev3dev.org/docs/getting-started/))
+   1. Uncomment `dtoverlay=brickpi3`
+   2. Uncomment the part for the camera module
 2. Setup Wifi ([Link](https://www.ev3dev.org/docs/tutorials/setting-up-wifi-using-the-command-line/))
 3. Use the [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
 4. Disable the brickman service `sudo systemctl disable brickman`, because we are operating headless, with no monitor. 
 5. Copy the autoupdate.sh script to your device.
 6. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/rot13.service`. 
+7. Do one installation of python packages `python -m pip install -r requirements.txt`
 
 ## Auto Update
 

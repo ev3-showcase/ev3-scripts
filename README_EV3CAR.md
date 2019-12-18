@@ -10,11 +10,13 @@ As this code is far from the quality needed to be published as a package, instal
 
 Python 3 is recommended.
 
+If pip is not installed run `sudo apt-get -y install python3-pip`. ([Link](https://askubuntu.com/questions/778052/installing-pip3-for-python3-on-ubuntu-16-04-lts-using-a-proxy))
 ```
 git clone https://github.com/ev3-showcase/ev3-scripts.git
 cd ev3-scripts
 git checkout move2package
 pip3 install .
+# Or sudo python3 -m pip install -r requirements.txt
 ```
 
 ## The car object
