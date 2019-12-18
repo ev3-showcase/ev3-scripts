@@ -6,18 +6,14 @@ import sys
 import time
 import uuid
 
-import paho.mqtt.client as mqtt
 from ev3dev2.motor import (OUTPUT_B, OUTPUT_C, OUTPUT_D, LargeMotor,
                            MediumMotor, MoveTank, SpeedNativeUnits)
 
-
+# A Programming interface for the car. Takes care of initialization etc.
 class Car(object):
-    def __init__(self, car_name='', broker='localhost', top_speed=900, simulation=False, port=1883, loglevel='WARNING'):
-        self.name = self.generate_name(car_name)
+    def __init__(self, top_speed=900, simulation=False, logLevel='WARNING'):
         self.speed = top_speed
-        self.port = port
         self.simulation = simulation
-        self.broker = broker
 
         # car parameters
         self.max_steer_angle = 0
@@ -25,78 +21,20 @@ class Car(object):
         self.top_speed = top_speed
 
         logging.basicConfig(level=getattr(
-            logging, loglevel.upper()), stream=sys.stderr)
+            logging, logLevel.upper()), stream=sys.stderr)
         logger = logging.getLogger(__name__)
-
-        self.mqtt_client = mqtt.Client(self.name, transport='websockets')
-        self.mqtt_client.on_connect = self.on_connect
-        self.mqtt_client.on_message = self.on_message
-        self.mqtt_client.on_disconnect = self.on_disconnect
-        self.mqtt_client.enable_logger(logger=logger)
-
-        # connect to the broker
-        self.mqtt_client.connect(
-            host=self.broker, port=self.port, keepalive=60)
-
-        self.mqtt_client.loop_start()
-
-        # ensure proper error handling
-        signal.signal(signal.SIGTERM, self.sigterm_handler)
-        signal.signal(signal.SIGINT, self.sigterm_handler)
 
         # initialize the motor objects only if not running as sim, otherwise crashes occure when the motor is not found
         if not self.simulation:
-            self.mainMotors = MoveTank(OUTPUT_B, OUTPUT_C)
-            self.steeringMotor = LargeMotor(OUTPUT_D)
-            self.calibrate_steering()
+            try: 
+                self.mainMotors = MoveTank(OUTPUT_B, OUTPUT_C)
+                self.steeringMotor = LargeMotor(OUTPUT_D)
+                self.calibrate_steering()
+            except: 
+                logging.critical("Motors or Sensors not connected. Connect them or run in simulation mode!")
 
-        logging.info("Car created as {}".format(self.name))
-
-    def generate_name(self, car_name):
-        if car_name:
-            return car_name
-        else:
-            return 'car-' + uuid.uuid4().hex.upper()[0:6]
-
-    def disconnect(self):
-        self.mqtt_client.loop_stop()
-        self.mqtt_client.disconnect()
-        # I'm almost sure this is a totally wrong thing to do, but... It seems to work.
-        exit(0)
-
-    def on_connect(self, mqtt_client, userdata, flags, rc):
-        if rc == 0:
-            self.connected_flag = True
-            logging.info("Successful connection with rc {}".format(rc))
-            # self.mqtt_client.subscribe(self.topics)
-        else:
-            logging.critical("Connection failed with rc {}".format(rc))
-
-    def on_disconnect(self, mqtt_client, obj, rc):
-        logging.info("disconnecting")
-        try:
-            if rc == 0:
-                logging.info("disconnect request was initiated")
-            else:
-                if rc >= 1:
-                    error_msg = self.getErrorString(rc)
-                    logging.error(
-                        "disconnect occurred due to {}. Will attempt to reconnect".format(error_msg))
-                    mqtt_client.reconnect()
-        except Exception as e:
-            logging.error(
-                "Error occurred in disconnect callback with error {}", str(e), exc_info=True)
-
-    def on_message(self, client, userdata, msg):
-        logging.info("Message received")
-        logging.debug("Message content: {}".format(msg.payload))
-
-    def __repr__(self):
-        return("Car %s" % self.name)
-
-    def _str_(self):
-        return("%s, %d" % self.name, self.speed)
-
+        logging.info("Car initialized.")
+    
     def sigterm_handler(self, signal, frame):
         self.disconnect()
         logging.info('Termination signal received, closing connection')
