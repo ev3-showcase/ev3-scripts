@@ -9,9 +9,10 @@ import uuid
 from ev3dev2.motor import (OUTPUT_B, OUTPUT_C, OUTPUT_D, LargeMotor,
                            MediumMotor, MoveTank, SpeedNativeUnits)
 
+
 # A Programming interface for the car. Takes care of initialization etc.
 class Car(object):
-    def __init__(self, top_speed=900, simulation=False, logLevel='WARNING'):
+    def __init__(self, top_speed=900, simulation=False):
         self.speed = top_speed
         self.simulation = simulation
 
@@ -20,10 +21,6 @@ class Car(object):
         self.steering_center_pos = 0
         self.top_speed = top_speed
 
-        logging.basicConfig(level=getattr(
-            logging, logLevel.upper()), stream=sys.stderr)
-        logger = logging.getLogger(__name__)
-
         # initialize the motor objects only if not running as sim, otherwise crashes occure when the motor is not found
         if not self.simulation:
             try: 
@@ -31,7 +28,7 @@ class Car(object):
                 self.steeringMotor = LargeMotor(OUTPUT_D)
                 self.calibrate_steering()
             except: 
-                logging.critical("Motors or Sensors not connected. Connect them or run in simulation mode!")
+                logging.critical("Motors or Sensors are not connected. Connect them or run in simulation mode!")
 
         logging.info("Car initialized.")
     
@@ -82,7 +79,7 @@ class Car(object):
                 self.steeringMotor.on_for_degrees(25, -40)
                 self.steeringMotor.on_for_degrees(25, 40)
         except ValueError:
-            logger.error("Invalid Steering Angle")
+            logging.error("Invalid Steering Angle")
         # halve the max steering degrees to correct flexing and play in mechanics
         self.max_steer_angle = round(temp_steer_angle * 0.5)
         logging.info('Max steering angle: {}'.format(self.max_steer_angle))
@@ -128,7 +125,7 @@ class Car(object):
                     self.steeringMotor.on_for_degrees(25, -40)
                     self.steeringMotor.on_for_degrees(25, 40)
             except ValueError:
-                logger.error("Invalid Steering Angle")
+                logging.error("Invalid Steering Angle")
 
     def set_speed(self, dest_speed_perc):
         # acceleration is given in percentages

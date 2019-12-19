@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 import json
 import logging
+import os
 import signal
 import sys
-import os
 import time
 import uuid
 
 import paho.mqtt.client as mqtt
 from ev3car import Car
 
-# Setup Logging
-logLevel = 'DEBUG'
+# Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
+logLevel = 'INFO'
 logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ tp_steer = 'car/steering'
 
 # Program variables
 Connected = False   
-ev3car = Car(simulation=False, logLevel=logLevel)
+ev3car = Car(simulation=False)
 
 
  
@@ -57,13 +57,15 @@ def on_disconnect(self, mqtt_client, obj, rc):
                     mqtt_client.reconnect()
         except Exception as e:
             logging.error(
-                "Error occurred in disconnect callback with error {}", str(e), exc_info=True)
+                'Error occurred in disconnect callback with error %s', str(e), exc_info=True)
 
 def on_speed(client, userdata, msg):
     try:
         ev3car.set_speed(int(msg.payload.decode('utf-8')))
     except ValueError:
-        logger.error("Invalid speed")
+        logging.error("Invalid speed")
+    except: 
+        logging.error("Other Error", exc_info=True)
     # here you could now access the cars properties and change e.g. the speed or turn on various sensors`
     # decode to utf8 to avoid getting binary strings
 
@@ -74,6 +76,8 @@ def on_steer(client, userdata, msg):
         ev3car.steer(int(msg.payload.decode('utf-8')))
     except ValueError:
         logger.error("Invalid steering input")
+    except: 
+        logging.error("Other Error", exc_info=True)
 
 def main():
     
@@ -111,4 +115,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
