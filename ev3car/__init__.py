@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
+import ctypes
 import json
 import logging
 import signal
 import sys
 import time
 import uuid
+from multiprocessing import Process, Value
 
+import paho.mqtt.client as mqtt
 from ev3dev2.motor import (OUTPUT_B, OUTPUT_C, OUTPUT_D, LargeMotor,
                            MediumMotor, MoveTank, SpeedNativeUnits)
 
@@ -31,10 +34,7 @@ class Car(object):
                 logging.critical("Motors or Sensors are not connected. Connect them or run in simulation mode!")
 
         logging.info("Car initialized.")
-    
-    def sigterm_handler(self, signal, frame):
-        self.disconnect()
-        logging.info('Termination signal received, closing connection')
+
 
     def calibrate_steering(self):
         # get max angle right
@@ -135,3 +135,99 @@ class Car(object):
             self.mainMotors.on(left_speed=SpeedNativeUnits(
                 dest_speed), right_speed=SpeedNativeUnits(dest_speed))
         logging.info("Speed was set to {}".format(dest_speed))
+
+
+
+
+
+class MQTTReceiver():
+    def __init__(self, broker_address='localhost', port=1883, keepalive=60):
+        # Constants 
+        self.__topic_speed = 'car/speed'
+        self.__topic_steer = 'car/steering'
+
+        self.time = Value(ctypes.c_float, 0)
+        self.throttle = Value(ctypes.c_int, 0)
+        self.steering = Value(ctypes.c_int, 0)
+        self.is_run = Value(ctypes.c_bool, True)
+
+
+        self._client = mqtt.Client('car-' + uuid.uuid4().hex.upper()[0:6], transport='websockets')               
+        self._client.on_connect = self._on_connect
+        self._client.on_message = self._on_message
+        self._client.on_disconnect = self._on_disconnect
+        # client.username_pw_set(user, password=password)    
+
+
+        self._client.connect(broker_address, port, keepalive)
+        logging.debug("Waiting for connection...")
+
+        self._client.loop_start()
+        # while self.is_run.value:
+            # time.sleep(0.01)
+
+        # self._p = Process(target=self._process, args=())
+        # self._p.start()
+        return
+
+    def close(self):
+        self._client.loop_stop()
+        # self.is_run.value = False
+        # self._p.join()
+
+    def _on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
+            logging.info("Successful connection with rc {}".format(rc))
+
+            # subscribe to steering and speed topics
+            client.subscribe([(self.__topic_speed, 0), (self.__topic_steer, 0)])
+
+            # apply callback to issue actions when certain messages arrive
+            client.message_callback_add(self.__topic_speed, self._on_speed)
+            client.message_callback_add(self.__topic_steer, self._on_steer)
+            logging.debug("Subscribed to topics. Ready for Messages.")
+        else:
+            logging.critical("Connection failed with rc {}".format(rc))
+
+    def _on_message(self, client, userdata, message):
+        logging.info("Message received")
+        logging.debug("Message content: {}".format(message.payload))
+        # TODO: Make one message out of two to increase performance
+        # driver_msg = json.loads(msg.payload.decode('utf-8'))
+        # self.time.value = driver_msg['time']
+        # self.throttle.value = driver_msg['throttle']
+        # self.steering.value = driver_msg['steering']
+
+    def _on_speed(self, client, userdata, msg):
+        try:
+            self.throttle.value = int(msg.payload.decode('utf-8'))
+            self.time.value = time.time()
+        except ValueError:
+            logging.error("Invalid speed")
+
+    def _on_steer(self, client, userdata, msg):
+        try:
+            self.steering.value = int(msg.payload.decode('utf-8'))
+            self.time.value = time.time()
+        except ValueError:
+            logging.error("Invalid steering input")
+        
+    def _on_disconnect(self, mqtt_client, obj, rc):
+            logging.info("disconnecting")
+            try:
+                if rc == 0:
+                    logging.info("disconnect request was initiated")
+                else:
+                    if rc >= 1:
+                        logging.error(
+                            "disconnect occurred. Will attempt to reconnect", exc_info=True)
+                        mqtt_client.reconnect()
+            except Exception:
+                logging.error(
+                    'Error occurred in disconnect callback with error.', exc_info=True)
+
+    def _process(self):
+        self._client.loop_start()
+        while self.is_run.value:
+            time.sleep(0.01)
+        self._client.loop_stop()
