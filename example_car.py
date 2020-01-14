@@ -15,18 +15,21 @@ logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
-#Set MQTT Variables
- 
+# Set MQTT Variables
+
 broker_address = os.getenv(
     'MQTT_BROKER', 'message-broker-mqtt-websocket-fk-sc.aotp012.mcs-paas.io')
 port = int(os.getenv('MQTT_PORT', 80))
+
+simulation = True
 
 
 def main():
     try:
         receiver = MQTTReceiver(broker_address=broker_address, port=port)
-        ev3car = Car(simulation=True)
+        ev3car = Car(simulation=simulation)
 
+        logging.debug("Car Ready!")
         while True:
             throttle_value = receiver.throttle.value
             steering_value = receiver.steering.value
@@ -36,18 +39,16 @@ def main():
             #     throttle_value = 0
             #     steering_value = 0
 
-            if False: 
-                ev3car.set_speed(throttle_value)
-                ev3car.steer(steering_value)
+            # if not simulation:
+            # ev3car.set_speed(throttle_value)
+            ev3car.steer(steering_value)
 
-            logging.info('Time diff: {}, Throttle: {}, Steering: {}'.format(time_diff_sec, throttle_value, steering_value))
+            # logging.info('Time diff: {}, Throttle: {}, Steering: {}'.format(time_diff_sec, throttle_value, steering_value))
             time.sleep(0.01)
 
-                
     except KeyboardInterrupt:
         logging.info('Termination signal received, closing connection')
         receiver.close()
-
 
 
 if __name__ == '__main__':

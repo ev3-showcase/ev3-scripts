@@ -17,13 +17,13 @@ if [ $? -eq 0 ] ; then
 fi
 
 # Autoinstall requirements
-#wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
-#if [ $? -eq 0 ] ; then
-#    # If the file exists download and overwrite
-#    wget -O requirements.txt https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
-#fi
-#
-#python -m pip install -r requirements.txt
+wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
+if [ $? -eq 0 ] ; then
+   # If the file exists download and overwrite
+   wget -O requirements.txt https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
+fi
+
+python -m pip install -r requirements.txt
 
 # Update the autoupdate script itself
 wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh
