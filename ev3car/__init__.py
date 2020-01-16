@@ -106,42 +106,12 @@ class Car(object):
                           curr_angle, target_angle, -1 * difference)
             # steer to the left
 
-            if not difference == 0:
-                self.steeringMotor.on_for_degrees(
-                    self.__steering_force, -1 * difference, block=False)
+            if difference > 4 or difference < -4:
+                logging.debug("Issued Command: Steer %i with force %i", -
+                              1 * difference, self.__steering_force * abs(difference)/100)
+                self.steeringMotor.on_to_position(
+                    self.__steering_force, target_angle, block=False)
 
-            # Or steer to the right
-
-            # logging.debug('Resulting Rotation in Degrees %d' % steer_rotation)
-
-            # logging.debug('New Position %d' % new_angle)
-            # curr_angle = self.steeringMotor.position
-            # logging.debug('Current Position %d' % self.steeringMotor.position)
-            # new_angle_abs = new_angle - curr_angle
-            # logging.debug('Actual Steering Delta %d' % new_angle_abs)
-            # #sm.on_for_degrees(50, angle, block=False)
-
-            # #new_angle_abs = (self.max_steer_angle * rel_angle_perc/100) - self.sm.position
-            # logging.info('Steering issued for {} degrees'.format(new_angle_abs))
-
-            # as new_angle_abs is  the destination and for_degrees will turn FOR a certain amount
-            # of degrees, remove the current position from the destination position and turn
-            #self.sm.on_for_degrees(50, round(new_angle_abs - self.sm.position), block=False)
-            # Oversteers on way back due to drag on tires. Returns to centerposition afterwards
-            # try:
-            #     val = int(new_angle_abs)
-            #     if(val > 0):
-            #         logging.debug(
-            #             'Steering Direction  is Positive, correct Tire angle now.')
-            #         self.steeringMotor.on_for_degrees(25, 40)
-            #         self.steeringMotor.on_for_degrees(25, -40)
-            #     else:
-            #         logging.debug(
-            #             'Steering Direction  is Negative, correct Tire angle now.')
-            #         self.steeringMotor.on_for_degrees(25, -40)
-            #         self.steeringMotor.on_for_degrees(25, 40)
-            # except ValueError:
-            #     logging.error("Invalid Steering Angle")
 
     def set_speed(self, dest_speed_perc):
         # acceleration is given in percentages

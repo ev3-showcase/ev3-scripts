@@ -40,7 +40,7 @@ def main():
             #     steering_value = 0
 
             # if not simulation:
-            # ev3car.set_speed(throttle_value)
+            ev3car.set_speed(throttle_value)
             ev3car.steer(steering_value)
 
             # logging.info('Time diff: {}, Throttle: {}, Steering: {}'.format(time_diff_sec, throttle_value, steering_value))
