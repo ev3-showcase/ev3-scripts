@@ -15,8 +15,7 @@ from ev3dev2.motor import (OUTPUT_B, OUTPUT_C, OUTPUT_D, LargeMotor,
 
 # A Programming interface for the car. Takes care of initialization etc.
 class Car(object):
-    def __init__(self, max_throttle=900, simulation=False):
-        self.throttle = max_throttle
+    def __init__(self, throttle_factor=100, simulation=False):
         self.simulation = simulation
 
         self.__steering_force = 60
@@ -25,7 +24,8 @@ class Car(object):
         # Max steering Angle is the angle from center to max left or right
         self.max_steer_angle = 0
         self.steering_center_pos = 0
-        self.max_throttle = max_throttle
+        # Factor by which the speed percentage is scaled 100 for max 0 for no speed.
+        self.throttle_factor = throttle_factor
 
         # initialize the motor objects only if not running as sim, otherwise crashes occure when the motor is not found
         if not self.simulation:
@@ -112,15 +112,13 @@ class Car(object):
                 self.steeringMotor.on_to_position(
                     self.__steering_force, target_angle, block=False)
 
-
     def set_speed(self, dest_speed_perc):
-        # acceleration is given in percentages
-        dest_speed = self.max_throttle * dest_speed_perc/100
-        # acceleration happens by giving the destination speed
+        dest_speed = self.throttle_factor / 100 * dest_speed_perc
+
         if not self.simulation:
-            self.mainMotors.on(left_speed=SpeedNativeUnits(
-                dest_speed), right_speed=SpeedNativeUnits(dest_speed))
-        logging.info("Speed was set to {}".format(dest_speed))
+            self.mainMotors.on(left_speed=dest_speed,
+                               right_speed=dest_speed)
+        logging.info("Speed was set to {}%".format(dest_speed))
 
 
 class MQTTReceiver():
