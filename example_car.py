@@ -21,7 +21,7 @@ broker_address = os.getenv(
     'MQTT_BROKER', 'message-broker-mqtt-websocket-fk-sc.aotp012.mcs-paas.io')
 port = int(os.getenv('MQTT_PORT', 80))
 
-simulation = True
+simulation = False
 
 
 def main():
