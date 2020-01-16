@@ -121,9 +121,10 @@ class Car(object):
         dest_speed = self.throttle_factor / 100 * dest_speed_perc
 
         if not self.simulation:
+            # The inverse of the second motor is for the purpose of our custom drive (for increased durability)
             self.mainMotors.on(left_speed=dest_speed,
-                               right_speed=dest_speed)
-        logging.info("Speed was set to {}%".format(dest_speed))
+                               right_speed=-dest_speed)
+        # logging.info("Speed was set to %i and %i", dest_speed, - dest_speed)
 
 
 class MQTTReceiver():
