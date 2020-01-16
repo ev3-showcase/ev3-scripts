@@ -18,7 +18,7 @@ class Car(object):
     def __init__(self, throttle_factor=100, simulation=False):
         self.simulation = simulation
 
-        self.__steering_force = 60
+        self.__steering_force = 90
 
         # car parameters
         # Max steering Angle is the angle from center to max left or right
@@ -67,7 +67,8 @@ class Car(object):
         # as we are currently at the max negative steering from determining sec_pos
         # using max_steer_angle should center the wheels
         self.steeringMotor.on_for_degrees(
-            self.__steering_force, temp_steer_angle)
+            self.__steering_force, temp_steer_angle, False)
+
         self.steering_center_pos = self.steeringMotor.position
         logging.info('Motor zeroes at position {}'.format(
             self.steering_center_pos))
@@ -78,13 +79,17 @@ class Car(object):
             if(val > 0):
                 logging.debug(
                     'Steering Direction is Positive, correct Tire angle now.')
-                self.steeringMotor.on_for_degrees(self.__steering_force, 40)
-                self.steeringMotor.on_for_degrees(self.__steering_force, -40)
+                self.steeringMotor.on_for_degrees(
+                    self.__steering_force, 40, False)
+                self.steeringMotor.on_for_degrees(
+                    self.__steering_force, -40, False)
             else:
                 logging.debug(
                     'Steering Direction is Negative, correct Tire angle now.')
-                self.steeringMotor.on_for_degrees(self.__steering_force, -40)
-                self.steeringMotor.on_for_degrees(self.__steering_force, 40)
+                self.steeringMotor.on_for_degrees(
+                    self.__steering_force, -40, False)
+                self.steeringMotor.on_for_degrees(
+                    self.__steering_force, 40, False)
         except ValueError:
             logging.error("Invalid Steering Angle")
         # halve the max steering degrees to correct flexing and play in mechanics
