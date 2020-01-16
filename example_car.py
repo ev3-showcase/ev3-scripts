@@ -27,7 +27,7 @@ simulation = False
 def main():
     try:
         receiver = MQTTReceiver(broker_address=broker_address, port=port)
-        ev3car = Car(throttle_factor=100, simulation=simulation)
+        ev3car = Car(throttle_factor=60, simulation=simulation)
 
         logging.debug("Car Ready!")
         while True:
