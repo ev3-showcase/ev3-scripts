@@ -184,6 +184,8 @@ class MQTTReceiver():
             value = int(msg.payload.decode('utf-8'))
             if value > 100:
                 value = 100
+            if value < -100:
+                value = -100
             self.throttle.value = value
             self.time.value = time.time()
         except ValueError:

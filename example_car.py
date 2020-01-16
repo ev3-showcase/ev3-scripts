@@ -10,7 +10,7 @@ import uuid
 from ev3car import Car, MQTTReceiver
 
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
-logLevel = 'WARNING'  # DEBUG or WARNING
+logLevel = 'DEBUG'  # DEBUG or WARNING
 logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ simulation = False
 def main():
     try:
         receiver = MQTTReceiver(broker_address=broker_address, port=port)
-        ev3car = Car(simulation=simulation)
+        ev3car = Car(throttle_factor=20, simulation=simulation)
 
         logging.debug("Car Ready!")
         while True:
