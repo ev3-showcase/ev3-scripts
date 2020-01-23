@@ -32,11 +32,21 @@ Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/g
    1. Uncomment `dtoverlay=brickpi3`
    2. Uncomment the part for the camera module
 2. Setup Wifi ([Link](https://www.ev3dev.org/docs/tutorials/setting-up-wifi-using-the-command-line/))
-3. Use the [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
-4. Disable the brickman service `sudo systemctl disable brickman`, because we are operating headless, with no monitor. 
-5. Copy the autoupdate.sh script to your device.
-6. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/rot13.service`. 
+   1. `connmanctl`
+   2. `enable wifi`
+   3. `scan wifi`
+   3. `services`
+   4. `agent on`
+   5. `connect <wifi_ssid>`
+   6. `quit`
+3. Disable the brickman service `sudo systemctl disable brickman`, because we are operating headless, with no monitor. 
+4. Copy the `autoupdate/autoupdate.sh` script to your device. 
+   1. `mkdir /home/robot/autorun && /home/robot/autorun && wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh && chmod +x autoupdate.sh`
+5. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/car.service`. 
+   1. `cd /etc/systemd/system/ && sudo wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/car.service && sudo daemon-reload && sudo systemctl enable car.service`
+6. Install pip `sudo apt-get update && sudo apt-get install python3-pip`
 7. Do one installation of python packages `python -m pip install -r requirements.txt`
+8. Use the [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
 
 ## Auto Update
 
