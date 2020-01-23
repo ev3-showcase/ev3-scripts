@@ -44,7 +44,7 @@ Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/g
    1. `mkdir /home/robot/autorun && /home/robot/autorun && wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh && chmod +x autoupdate.sh`
 5. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/car.service`. 
    1. `cd /etc/systemd/system/ && sudo wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/car.service && sudo daemon-reload && sudo systemctl enable car.service`
-6. Install pip `sudo apt-get update && sudo apt-get install python3-pip`
+6. Install pip `sudo apt-get update && sudo apt-get install python3-pip && pip3 install -U --force-reinstall pip`
 7. Do one installation of python packages `python -m pip install -r requirements.txt`
 8. Use the [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
 
