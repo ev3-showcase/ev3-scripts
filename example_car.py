@@ -10,7 +10,7 @@ import uuid
 from ev3car import Car, MQTTReceiver
 
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
-logLevel = 'DEBUG'  # DEBUG or WARNING
+logLevel = 'WARNING'  # DEBUG or WARNING
 logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
