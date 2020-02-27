@@ -11,5 +11,6 @@ setup(name='ev3car',
       install_requires=[
           'paho-mqtt',
           'python-ev3dev2',
+          'picamera',
       ],
       zip_safe=False)

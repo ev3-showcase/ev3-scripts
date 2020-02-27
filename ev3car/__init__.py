@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 import ctypes
+import io
 import json
 import logging
 import signal
+import socketserver
 import sys
 import time
 import uuid
+from http import server
 from multiprocessing import Process, Value
+from threading import Condition
 
 import paho.mqtt.client as mqtt
 from ev3dev2.motor import (OUTPUT_B, OUTPUT_C, OUTPUT_D, LargeMotor,
@@ -41,14 +45,14 @@ class Car(object):
 
     def calibrate_steering(self):
         # get max angle right
-        self.steeringMotor.on(self.__steering_force)
+        self.steeringMotor.on(self.__steering_force, brake=False)
         while not self.steeringMotor.is_overloaded:
             time.sleep(0.01)
         logging.info('First Lock Position: %d' % self.steeringMotor.position)
         first_pos = self.steeringMotor.position
 
         # get max angle left
-        self.steeringMotor.on(-1 * self.__steering_force)
+        self.steeringMotor.on(-1 * self.__steering_force, brake=False)
         # Move steering to the other side and make sure that the motor has moved and is not blocked from moving to the right
         while not (self.steeringMotor.is_overloaded and abs(first_pos - self.steeringMotor.position) > 100):
             time.sleep(0.01)
@@ -67,7 +71,7 @@ class Car(object):
         # as we are currently at the max negative steering from determining sec_pos
         # using max_steer_angle should center the wheels
         self.steeringMotor.on_for_degrees(
-            self.__steering_force, temp_steer_angle, False)
+            self.__steering_force, temp_steer_angle, brake=False)
 
         self.steering_center_pos = self.steeringMotor.position
         logging.info('Motor zeroes at position {}'.format(
@@ -80,16 +84,16 @@ class Car(object):
                 logging.debug(
                     'Steering Direction is Positive, correct Tire angle now.')
                 self.steeringMotor.on_for_degrees(
-                    self.__steering_force, 40, False)
+                    self.__steering_force, 40, brake=False)
                 self.steeringMotor.on_for_degrees(
-                    self.__steering_force, -40, False)
+                    self.__steering_force, -40, brake=False)
             else:
                 logging.debug(
                     'Steering Direction is Negative, correct Tire angle now.')
                 self.steeringMotor.on_for_degrees(
-                    self.__steering_force, -40, False)
+                    self.__steering_force, -40, brake=False)
                 self.steeringMotor.on_for_degrees(
-                    self.__steering_force, 40, False)
+                    self.__steering_force, 40, brake=False)
         except ValueError:
             logging.error("Invalid Steering Angle")
         # halve the max steering degrees to correct flexing and play in mechanics
@@ -118,12 +122,20 @@ class Car(object):
                     self.__steering_force, target_angle, block=False)
 
     def set_speed(self, dest_speed_perc):
+        if dest_speed_perc > 100 or dest_speed_perc < -100:
+            raise NameError("Value '" + str(dest_speed_perc) +
+                            "' is out of bound.")
+
         dest_speed = self.throttle_factor / 100 * dest_speed_perc
 
         if not self.simulation:
-            # The inverse of the second motor is for the purpose of our custom drive (for increased durability)
-            self.mainMotors.on(left_speed=dest_speed,
-                               right_speed=-dest_speed)
+            if dest_speed == 0:
+                self.mainMotors.off(brake=False)
+            else:
+                # The inverse of the second motor is for the purpose of our custom drive (for increased durability)
+                self.mainMotors.on(left_speed=dest_speed,
+                                   right_speed=-dest_speed)
+
         # logging.info("Speed was set to %i and %i", dest_speed, - dest_speed)
 
 
@@ -149,11 +161,6 @@ class MQTTReceiver():
         logging.debug("Waiting for connection...")
 
         self._client.loop_start()
-        # while self.is_run.value:
-        # time.sleep(0.01)
-
-        # self._p = Process(target=self._process, args=())
-        # self._p.start()
         return
 
     def close(self):
@@ -228,3 +235,86 @@ class MQTTReceiver():
         while self.is_run.value:
             time.sleep(0.01)
         self._client.loop_stop()
+
+
+PAGE = """\
+<html>
+<head>
+<title>Raspberry Pi - Surveillance Camera</title>
+</head>
+<body>
+<center><h1>Raspberry Pi - Surveillance Camera</h1></center>
+<center><img src="stream.mjpg" width="640" height="480"></center>
+</body>
+</html>
+"""
+
+
+class StreamingOutput(object):
+    def __init__(self):
+        self.frame = None
+        self.buffer = io.BytesIO()
+        self.condition = Condition()
+
+    def write(self, buf):
+        if buf.startswith(b'\xff\xd8'):
+            # New frame, copy the existing buffer's content and notify all
+            # clients it's available
+            self.buffer.truncate()
+            with self.condition:
+                self.frame = self.buffer.getvalue()
+                self.condition.notify_all()
+            self.buffer.seek(0)
+        return self.buffer.write(buf)
+
+
+class StreamingHandler(server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        logging.info("Request")
+        if self.path == '/':
+            self.send_response(301)
+            self.send_header('Location', '/index.html')
+            self.end_headers()
+        elif self.path == '/index.html':
+            content = PAGE.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        elif self.path == '/stream.mjpg':
+            self.send_response(200)
+            self.send_header('Age', 0)
+            self.send_header('Cache-Control', 'no-cache, private')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header(
+                'Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
+            self.end_headers()
+            try:
+                while True:
+                    global output
+                    with output.condition:
+                        output.condition.wait()
+                        frame = output.frame
+                    self.wfile.write(b'--FRAME\r\n')
+                    self.send_header('Content-Type', 'image/jpeg')
+                    self.send_header('Content-Length', len(frame))
+                    self.end_headers()
+                    self.wfile.write(frame)
+                    self.wfile.write(b'\r\n')
+            except Exception as e:
+                logging.warning(
+                    'Removed streaming client %s: %s',
+                    self.client_address, str(e))
+        else:
+            self.send_error(404)
+            self.end_headers()
+
+
+def createStreamingServer(output):
+    return
+
+
+class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
