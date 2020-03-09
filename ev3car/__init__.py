@@ -168,6 +168,9 @@ class MQTTReceiver():
         # self.is_run.value = False
         # self._p.join()
 
+    def sendMessage(self, topic, message):
+        self._client.publish(topic, message)
+
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             logging.info("Successful connection with rc {}".format(rc))
