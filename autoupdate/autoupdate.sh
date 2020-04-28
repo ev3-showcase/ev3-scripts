@@ -16,13 +16,13 @@ if [ $? -eq 0 ] ; then
     wget -O ./ev3car/__init__.py https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/ev3car/__init__.py
 fi
 
-# Autoinstall requirements
-# wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
-# if [ $? -eq 0 ] ; then
-#    # If the file exists download and overwrite
-#    wget -O requirements.txt https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
-# fi
+wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
+if [ $? -eq 0 ] ; then
+   # If the file exists download and overwrite
+   wget -O requirements.txt https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/requirements.txt
+fi
 
+# Autoinstall requirements
 # python -m pip install -r requirements.txt
 
 # Update the autoupdate script itself
