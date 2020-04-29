@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import csv
 import ctypes
 import io
 import json
@@ -34,6 +35,8 @@ class Car(object):
         # initialize the motor objects only if not running as sim, otherwise crashes occure when the motor is not found
         if not self.simulation:
             try:
+                self.mainMotor_l = LargeMotor(OUTPUT_B)
+                self.mainMotor_r = LargeMotor(OUTPUT_C)
                 self.mainMotors = MoveTank(OUTPUT_B, OUTPUT_C)
                 self.steeringMotor = LargeMotor(OUTPUT_D)
                 self.calibrate_steering()
@@ -137,6 +140,10 @@ class Car(object):
                                    right_speed=-dest_speed)
 
         # logging.info("Speed was set to %i and %i", dest_speed, - dest_speed)
+
+    def get_car_stats(self):
+
+        return [self.steeringMotor.duty_cycle, self.steeringMotor.position, self.steeringMotor.state, self.mainMotor_l.duty_cycle, self.mainMotor_l.position, self.mainMotor_l.state, self.mainMotor_r.duty_cycle, self.mainMotor_r.position, self.mainMotor_r.state]
 
 
 class MQTTReceiver():

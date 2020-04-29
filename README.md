@@ -41,14 +41,21 @@ Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/g
    4. `agent on`
    5. `connect <wifi_ssid>`
    6. `quit`
-3. Disable the brickman service `sudo systemctl disable brickman`, because we are operating headless, with no monitor. 
-4. Copy the `autoupdate/autoupdate.sh` script to your device. 
-   1. `mkdir /home/robot/autorun && /home/robot/autorun && wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh && chmod +x autoupdate.sh`
-5. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/car.service`. 
-   1. `cd /etc/systemd/system/ && sudo wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/car.service && sudo daemon-reload && sudo systemctl enable car.service`
-6. Install pip `sudo apt-get update && sudo apt-get install python3-pip && pip3 install -U --force-reinstall pip`
-7. Do one installation of python packages `python -m pip install -r requirements.txt`
-8. Use the [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
+3. Connect via [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
+4. Disable the brickman service `sudo systemctl disable brickman`, because we are operating headless, with no monitor. 
+5. Copy the `autoupdate/autoupdate.sh` script to your device. 
+   1. `mkdir /home/robot/autorun && cd /home/robot/autorun && wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh && chmod +x autoupdate.sh`
+6. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/car.service`. 
+   1. `cd /etc/systemd/system/ && sudo wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/car.service && sudo systemctl daemon-reload && sudo systemctl enable car.service`
+7. Install pip `sudo apt-get update && sudo apt-get install python3-pip && pip3 install -U --force-reinstall pip`
+8. Do one installation of python packages `python3 -m pip install -r requirements.txt`
+
+## Verify or monitor scripts
+
+`journaltctl -u car`
+
+Kill all processes: 
+`pkill -f python3`
 
 ## Auto Update
 

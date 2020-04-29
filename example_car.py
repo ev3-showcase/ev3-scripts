@@ -28,13 +28,30 @@ logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
+dataLoggerFile = logging.FileHandler('/home/robot/data.log.csv', "w")
+dataLogger = logging.getLogger("FILE")
+
+# Write Header Row
+csvHeaderFormat = logging.Formatter('%(message)s')
+dataLoggerFile.setFormatter(csvHeaderFormat)
+dataLogger.addHandler(dataLoggerFile)
+dataLogger.info("datetime, gyro_rate, gyro_angle, cpu_stat, motor_steering_duty_cylce, motor_steering_position, motor_steering_state,motor_main_l_duty_cycle,motor_main_l_position,motor_main_l_state,motor_main_r_duty_cycle,motor_main_r_position,motor_main_r_state")
+dataLogger.removeHandler(dataLoggerFile)
+
+# Setup further logging
+csvFormat = logging.Formatter('%(asctime)s,%(message)s', datefmt='%s')
+dataLoggerFile.setFormatter(csvFormat)
+dataLogger.addHandler(dataLoggerFile)
+dataLogger.setLevel("DEBUG")
+
 # Set MQTT Variables
 
 broker_address = os.getenv(
-    'MQTT_BROKER', 'message-broker-mqtt-websocket-fk-sc.aotp012.mcs-paas.io')
-port = int(os.getenv('MQTT_PORT', 80))
+    'MQTT_BROKER', 'broker.hivemq.com')
+port = int(os.getenv('MQTT_PORT', 8000))
 
 simulation = False
+car = Car(throttle_factor=100, simulation=simulation)
 
 
 def runInParallel(*fns):
@@ -51,7 +68,9 @@ def runInParallel(*fns):
 def carcontrol():
     try:
         receiver = MQTTReceiver(broker_address=broker_address, port=port)
-        ev3car = Car(throttle_factor=100, simulation=simulation)
+
+        global car
+        ev3car = car
 
         logging.debug("Car Ready!")
         while True:
@@ -114,7 +133,13 @@ def stats():
         receiver.sendMessage("stats/gyro_rate", gyro_sensor.rate)
         receiver.sendMessage("stats/gyro_angle", gyro_sensor.angle)
 
-        time.sleep(2)
+        global car
+        carStats = car.get_car_stats()
+
+        dataLogger.info('{},{},{},{},{},{},{},{},{},{},{},{}'.format(gyro_sensor.rate, gyro_sensor.angle,
+                                                                     cpu_stat.procs_running(), carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
+
+        time.sleep(0.2)
 
 
 def main():
