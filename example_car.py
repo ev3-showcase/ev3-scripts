@@ -138,7 +138,27 @@ def stats():
 
         dataLogger.info('{},{},{},{},{},{},{},{},{},{},{},{}'.format(gyro_sensor.rate, gyro_sensor.angle,
                                                                      cpu_stat.procs_running(), carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
+# datetime, Zeit – ist klar
+# gyro_rate, - The rate at which the sensor is rotating, in degrees/second. 
+# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.rate
+# gyro_angle, - The number of degrees that the sensor has been rotated since it was put into this mode.
+# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.angle
+# cpu_stat, Processes Running
+# motor_steering_duty_cylce, - Returns the current duty cycle of the motor. Units are percent. Values are -100 to 100.
+# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.duty_cycle
+# motor_steering_position, - Returns the current position of the motor in pulses of the rotary encoder. When the motor rotates clockwise, the position will increase. Likewise, rotating counter-clockwise causes the position to decrease. Writing will set the position to that value.
+# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.position
+# motor_steering_state, - One of the following states: 
+# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.STATE_RUNNING
+# motor_main_l_duty_cycle, - same as above
+# motor_main_l_position, - same as above
+# motor_main_l_state, - same as above
+# motor_main_r_duty_cycle, - same as above
+# motor_main_r_position, - same as above
+# motor_main_r_state - same as above
 
+        
+        
         time.sleep(0.2)
 
 
