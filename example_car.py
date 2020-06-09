@@ -48,7 +48,7 @@ dataLogger.setLevel("DEBUG")
 
 broker_address = os.getenv(
     'MQTT_BROKER', 'message-broker-mqtt-websocket-legoracer.apps.p005.otc.mcs-paas.io')
-port = int(os.getenv('MQTT_PORT', 1883))
+port = int(os.getenv('MQTT_PORT', 80))
 
 simulation = False
 car = Car(throttle_factor=100, simulation=simulation)
