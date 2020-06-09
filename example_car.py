@@ -47,7 +47,7 @@ dataLogger.setLevel("DEBUG")
 # Set MQTT Variables
 
 broker_address = os.getenv(
-    'MQTT_BROKER', 'mqtt-broker-legoracer.apps.p005.otc.mcs-paas.io')
+    'MQTT_BROKER', 'message-broker-mqtt-websocket-legoracer.apps.p005.otc.mcs-paas.io')
 port = int(os.getenv('MQTT_PORT', 1883))
 
 simulation = False
