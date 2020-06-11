@@ -8,6 +8,7 @@ import socketserver
 import sys
 import time
 import uuid
+from datetime import datetime
 from http import server
 from multiprocessing import Pool, Process, Value
 from threading import Condition
@@ -22,20 +23,27 @@ import ev3dev.brickpi3 as ev3
 import picamera
 from linux_metrics import cpu_stat, disk_stat, mem_stat
 
+# from vidgear.gears import NetGear, PiGear, VideoGear
+
+# Kill all processes previously running
+# os.system("")
+
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
 logLevel = 'DEBUG'  # DEBUG or WARNING
 logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
-dataLoggerFile = logging.FileHandler('/home/robot/data.log.csv', "w")
+today = datetime.today().strftime("%d_%m_%Y_%H_%M_%S")
+dataLoggerFile = logging.FileHandler(
+    '/home/robot/data_' + today + '.log.csv', "w")
 dataLogger = logging.getLogger("FILE")
 
 # Write Header Row
 csvHeaderFormat = logging.Formatter('%(message)s')
 dataLoggerFile.setFormatter(csvHeaderFormat)
 dataLogger.addHandler(dataLoggerFile)
-dataLogger.info("datetime, gyro_rate, gyro_angle, cpu_stat, motor_steering_duty_cylce, motor_steering_position, motor_steering_state,motor_main_l_duty_cycle,motor_main_l_position,motor_main_l_state,motor_main_r_duty_cycle,motor_main_r_position,motor_main_r_state")
+dataLogger.info("datetime, cpu_stat_processes, cpu_stat_percent, mem_stat_used, mem_stat_total, ultransonic, gyro_rate, gyro_angle, motor_steering_duty_cylce, motor_steering_position, motor_steering_state,motor_main_l_duty_cycle,motor_main_l_position,motor_main_l_state,motor_main_r_duty_cycle,motor_main_r_position,motor_main_r_state")
 dataLogger.removeHandler(dataLoggerFile)
 
 # Setup further logging
@@ -94,18 +102,30 @@ def carcontrol():
         receiver.close()
 
 
-def videofeed():
-    with picamera.PiCamera(resolution='1640x1232', framerate=15) as camera:
-        ev3car.output = StreamingOutput()
-        # Uncomment the next line to change your Pi's Camera rotation (in degrees)
-        # camera.rotation = 90
-        camera.start_recording(ev3car.output, format='mjpeg')
-        try:
-            address = ('', 8000)
-            server = StreamingServer(address, StreamingHandler)
-            server.serve_forever()
-        finally:
-            camera.stop_recording()
+# def videofeed():
+    # options = {"hflip": True, "exposure_mode": "auto", "iso": 800,
+    #            "exposure_compensation": 15, "awb_mode": "horizon", "sensor_mode": 0}
+    # # open pi video stream with defined parameters
+    # stream = PiGear(resolution=(640, 480), framerate=60,
+    #                 logging=True).start()
+    # server = NetGear()
+
+    # while True:
+    #       # read frames from stream
+    #     frame = stream.read()
+
+    #     # check for frame if Nonetype
+    #     if frame is None:
+    #         break
+
+    #     server.send(frame)
+    #     # camera.start_recording(ev3car.output, format='mjpeg')
+    #     # try:
+    #     #     address = ('', 8000)
+    #     #     server = StreamingServer(address, StreamingHandler)
+    #     #     server.serve_forever()
+    #     # finally:
+    #     #     camera.stop_recording()
 
 
 def stats():
@@ -117,6 +137,14 @@ def stats():
     time.sleep(0.1)
     gyro_sensor = ev3.GyroSensor(ev3.INPUT_2)
     gyro_sensor.mode = gyro_sensor.MODE_GYRO_G_A
+
+    p = LegoPort(ev3.INPUT_1)
+    p.mode = "ev3-uart"
+    p.set_device = "lego-ev3-us"
+    time.sleep(0.1)
+    us_sensor = ev3.UltrasonicSensor(ev3.INPUT_1)
+    us_sensor.mode = us_sensor.MODE_US_DIST_CM
+    # us_sensor.MODE_US_DIST_CM = 'US_DIST_CM'
 
     # p = LegoPort(ev3.INPUT_1)
     # p.mode = "ev3-analog"
@@ -136,10 +164,14 @@ def stats():
         global car
         carStats = car.get_car_stats()
 
-        dataLogger.info('{},{},{},{},{},{},{},{},{},{},{},{}'.format(gyro_sensor.rate, gyro_sensor.angle,
-                                                                     cpu_stat.procs_running(), carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
+        used, total, _, _, _, _ = mem_stat.mem_stats()
+
+        dataLogger.info('{},{},{},{},{},{},{},{},{},{},{},{}'.format(cpu_stat.procs_running(), cpu_stat.cpu_percents(1)["idle"], used, total, us_sensor.value(), gyro_sensor.rate, gyro_sensor.angle,
+                                                                     carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
+
+
 # datetime, Zeit – ist klar
-# gyro_rate, - The rate at which the sensor is rotating, in degrees/second. 
+# gyro_rate, - The rate at which the sensor is rotating, in degrees/second.
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.rate
 # gyro_angle, - The number of degrees that the sensor has been rotated since it was put into this mode.
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.angle
@@ -148,7 +180,7 @@ def stats():
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.duty_cycle
 # motor_steering_position, - Returns the current position of the motor in pulses of the rotary encoder. When the motor rotates clockwise, the position will increase. Likewise, rotating counter-clockwise causes the position to decrease. Writing will set the position to that value.
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.position
-# motor_steering_state, - One of the following states: 
+# motor_steering_state, - One of the following states:
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.STATE_RUNNING
 # motor_main_l_duty_cycle, - same as above
 # motor_main_l_position, - same as above
@@ -157,13 +189,12 @@ def stats():
 # motor_main_r_position, - same as above
 # motor_main_r_state - same as above
 
-        
-        
         time.sleep(0.2)
 
 
 def main():
-    runInParallel(carcontrol, videofeed, stats)
+    # runInParallel(carcontrol, videofeed, stats)
+    runInParallel(carcontrol, stats)
 
 
 if __name__ == '__main__':
