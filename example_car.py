@@ -175,7 +175,11 @@ def stats():
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.rate
 # gyro_angle, - The number of degrees that the sensor has been rotated since it was put into this mode.
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.angle
-# cpu_stat, Processes Running
+# cpu_stat_processes, Number of Processes Running
+# cpu_stat_percent, percentage unused CPU 
+# mem_stat_used - Used Bytes of Memory
+# mem_stat_total - Total Bytes of Memory
+# ultransonic - Abstand in mm
 # motor_steering_duty_cylce, - Returns the current duty cycle of the motor. Units are percent. Values are -100 to 100.
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.duty_cycle
 # motor_steering_position, - Returns the current position of the motor in pulses of the rotary encoder. When the motor rotates clockwise, the position will increase. Likewise, rotating counter-clockwise causes the position to decrease. Writing will set the position to that value.
