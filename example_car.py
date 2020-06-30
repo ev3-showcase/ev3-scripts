@@ -13,14 +13,14 @@ from http import server
 from multiprocessing import Pool, Process, Value
 from threading import Condition
 
-import ev3car
-from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
-                    StreamingServer)
 from ev3dev2.port import LegoPort
 from ev3dev2.sensor.lego import GyroSensor
 
+import ev3car
 import ev3dev.brickpi3 as ev3
 import picamera
+from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
+                    StreamingServer)
 from linux_metrics import cpu_stat, disk_stat, mem_stat
 
 # from vidgear.gears import NetGear, PiGear, VideoGear
@@ -158,14 +158,14 @@ def stats():
         logging.warning("stats")
 
         # Custom Sensor Data
-        receiver.sendMessage("stats/gyro_rate", gyro_sensor.rate)
-        receiver.sendMessage("stats/gyro_angle", gyro_sensor.angle)
 
         global car
         carStats = car.get_car_stats()
 
         used, total, _, _, _, _ = mem_stat.mem_stats()
 
+        receiver.sendMessage("stats/log", '{},{},{},{},{},{},{},{},{},{},{},{}'.format(cpu_stat.procs_running(), cpu_stat.cpu_percents(1)["idle"], used, total, us_sensor.value(), gyro_sensor.rate, gyro_sensor.angle,
+                                                                                       carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
         dataLogger.info('{},{},{},{},{},{},{},{},{},{},{},{}'.format(cpu_stat.procs_running(), cpu_stat.cpu_percents(1)["idle"], used, total, us_sensor.value(), gyro_sensor.rate, gyro_sensor.angle,
                                                                      carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
 
