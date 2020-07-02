@@ -104,23 +104,22 @@ class Car(object):
     def steer(self, rel_angle_perc):
         assert -100 <= rel_angle_perc <= 100
         if not self.simulation:
+            # logging.debug(self.steeringMotor.position)
             # Get Current Position
             curr_angle = self.steeringMotor.position
 
             # Get Target Angle
-            logging.debug('Max Steering Angle: %d' % self.max_steer_angle)
+            # logging.debug('Max Steering Angle: %d' % self.max_steer_angle)
             target_angle = self.steering_center_pos + \
                 round(self.max_steer_angle*(rel_angle_perc/100))
 
             difference = round(curr_angle - target_angle)
             # Take According action
-            logging.debug("Curr: %i | Target: %i | res: %i",
-                          curr_angle, target_angle, -1 * difference)
+            # logging.debug("Curr: %i | Target: %i | res: %i", curr_angle, target_angle, -1 * difference)
             # steer to the left
 
             if difference > 4 or difference < -4:
-                logging.debug("Issued Command: Steer %i with force %i", -
-                              1 * difference, self.__steering_force * abs(difference)/100)
+                # logging.debug("Issued Command: Steer %i with force %i", -1 * difference, self.__steering_force * abs(difference)/100)
                 self.steeringMotor.on_to_position(
                     self.__steering_force, target_angle, block=False)
 
@@ -142,7 +141,9 @@ class Car(object):
         # logging.info("Speed was set to %i and %i", dest_speed, - dest_speed)
 
     def get_car_stats(self):
-
+        # logging.debug('{},{},{},{},{},{},{},{},{}'.format(self.steeringMotor.duty_cycle, self.steeringMotor.position, self.steeringMotor.state,
+        #                                                  self.mainMotor_l.duty_cycle, self.mainMotor_l.position, self.mainMotor_l.state,
+        #                                                  self.mainMotor_r.duty_cycle, self.mainMotor_r.position, self.mainMotor_r.state))
         return [self.steeringMotor.duty_cycle, self.steeringMotor.position, self.steeringMotor.state, self.mainMotor_l.duty_cycle, self.mainMotor_l.position, self.mainMotor_l.state, self.mainMotor_r.duty_cycle, self.mainMotor_r.position, self.mainMotor_r.state]
 
 
@@ -250,10 +251,10 @@ class MQTTReceiver():
 PAGE = """\
 <html>
 <head>
-<title>Raspberry Pi - Surveillance Camera</title>
+<title>Lego Car Camera</title>
 </head>
 <body>
-<center><h1>Raspberry Pi - Surveillance Camera</h1></center>
+<center><h1>Lego Car Camera</h1></center>
 <center><img src="stream.mjpg" width="640" height="480"></center>
 </body>
 </html>

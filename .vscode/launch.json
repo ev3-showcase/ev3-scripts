@@ -1,6 +1,13 @@
 {
     "version": "0.0.1",
-    "configurations":[
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
         {
             "name": "Download and Run Current File",
             "type": "ev3devBrowser",

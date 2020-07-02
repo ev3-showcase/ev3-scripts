@@ -15,13 +15,13 @@ from threading import Condition
 
 from ev3dev2.port import LegoPort
 from ev3dev2.sensor.lego import GyroSensor
+from linux_metrics import cpu_stat, disk_stat, mem_stat
 
 import ev3car
 import ev3dev.brickpi3 as ev3
 import picamera
 from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
                     StreamingServer)
-from linux_metrics import cpu_stat, disk_stat, mem_stat
 
 # from vidgear.gears import NetGear, PiGear, VideoGear
 
@@ -91,8 +91,11 @@ def carcontrol():
             #     steering_value = 0
 
             if not simulation:
-                ev3car.set_speed(throttle_value)
-                ev3car.steer(steering_value)
+                try:
+                    ev3car.set_speed(throttle_value)
+                    ev3car.steer(steering_value)
+                except ValueError:
+                    pass
 
             # logging.info('Time diff: {}, Throttle: {}, Steering: {}'.format(time_diff_sec, throttle_value, steering_value))
             time.sleep(0.01)
@@ -102,6 +105,18 @@ def carcontrol():
         receiver.close()
 
 
+def videofeed():
+    with picamera.PiCamera(resolution='1640x1232', framerate=15) as camera:
+        ev3car.output = StreamingOutput()
+        # Uncomment the next line to change your Pi's Camera rotation (in degrees)
+        # camera.rotation = 90
+        camera.start_recording(ev3car.output, format='mjpeg')
+        try:
+            address = ('', 8000)
+            server = StreamingServer(address, StreamingHandler)
+            server.serve_forever()
+        finally:
+            camera.stop_recording()
 # def videofeed():
     # options = {"hflip": True, "exposure_mode": "auto", "iso": 800,
     #            "exposure_compensation": 15, "awb_mode": "horizon", "sensor_mode": 0}
@@ -144,7 +159,6 @@ def stats():
     time.sleep(0.1)
     us_sensor = ev3.UltrasonicSensor(ev3.INPUT_1)
     us_sensor.mode = us_sensor.MODE_US_DIST_CM
-    # us_sensor.MODE_US_DIST_CM = 'US_DIST_CM'
 
     # p = LegoPort(ev3.INPUT_1)
     # p.mode = "ev3-analog"
@@ -153,22 +167,20 @@ def stats():
     # logging.warning(touchSensor.value())
 
     while True:
-        # Pi Stats
-        receiver.sendMessage("stats/cpu", cpu_stat.procs_running())
-        logging.warning("stats")
+        try:
+            # Custom Sensor Data
+            global car
+            carStats = car.get_car_stats()
+            used, total, _, _, _, _ = mem_stat.mem_stats()
 
-        # Custom Sensor Data
+            statsString = ','.join([str(cpu_stat.procs_running()), str(cpu_stat.cpu_percents(1)["idle"]), str(used), str(total), str(us_sensor.value()), str(gyro_sensor.rate), str(gyro_sensor.angle),
+                                    str(carStats[0]), str(carStats[1]), str(carStats[2]), str(carStats[3]), str(carStats[4]), str(carStats[5]), str(carStats[6]), str(carStats[7]), str(carStats[8])])
+            receiver.sendMessage("stats/log", statsString)
+            dataLogger.info(statsString)
+        except ValueError:
+            logging.error("Invalid Stats")
 
-        global car
-        carStats = car.get_car_stats()
-
-        used, total, _, _, _, _ = mem_stat.mem_stats()
-
-        receiver.sendMessage("stats/log", '{},{},{},{},{},{},{},{},{},{},{},{}'.format(cpu_stat.procs_running(), cpu_stat.cpu_percents(1)["idle"], used, total, us_sensor.value(), gyro_sensor.rate, gyro_sensor.angle,
-                                                                                       carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
-        dataLogger.info('{},{},{},{},{},{},{},{},{},{},{},{}'.format(cpu_stat.procs_running(), cpu_stat.cpu_percents(1)["idle"], used, total, us_sensor.value(), gyro_sensor.rate, gyro_sensor.angle,
-                                                                     carStats[0], carStats[1], carStats[2], carStats[3], carStats[4], carStats[5], carStats[6], carStats[7], carStats[8]))
-
+        # time.sleep(0.5)
 
 # datetime, Zeit – ist klar
 # gyro_rate, - The rate at which the sensor is rotating, in degrees/second.
@@ -176,7 +188,7 @@ def stats():
 # gyro_angle, - The number of degrees that the sensor has been rotated since it was put into this mode.
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.angle
 # cpu_stat_processes, Number of Processes Running
-# cpu_stat_percent, percentage unused CPU 
+# cpu_stat_percent, percentage unused CPU
 # mem_stat_used - Used Bytes of Memory
 # mem_stat_total - Total Bytes of Memory
 # ultransonic - Abstand in mm
@@ -193,12 +205,10 @@ def stats():
 # motor_main_r_position, - same as above
 # motor_main_r_state - same as above
 
-        time.sleep(0.2)
-
 
 def main():
-    # runInParallel(carcontrol, videofeed, stats)
-    runInParallel(carcontrol, stats)
+    runInParallel(carcontrol, videofeed, stats)
+    #runInParallel(carcontrol, stats)
 
 
 if __name__ == '__main__':
