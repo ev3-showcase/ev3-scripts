@@ -44,9 +44,9 @@ Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/g
 4. Copy the `autoupdate/autoupdate.sh` script to your device. 
    1. `mkdir /home/robot/autorun && cd /home/robot/autorun && wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh && chmod +x autoupdate.sh`
 6. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/car.service`. 
-   1. `cd /etc/systemd/system/ && sudo wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/car.service && sudo systemctl daemon-reload && sudo systemctl enable car.service`
+   1. `cd /etc/systemd/system/ && sudo wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/car.service && sudo systemctl daemon-reload && sudo systemctl enable car.service && sudo systemctl start car.service`
 7. Install pip `sudo apt-get update && sudo apt-get install python3-pip -y && pip3 install -U --force-reinstall pip`
-8. Do one installation of python packages `python3 -m pip install -r requirements.txt`
+8. Do one installation of python packages `cd ~/autorun && python3 -m pip install -r requirements.txt`
 
 ## Verify or monitor scripts
 
