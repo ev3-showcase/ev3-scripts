@@ -29,7 +29,7 @@ Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/g
 ## Raspberry with PiBrick setup 
 
 1. Flash the SD Card ([Link](https://www.ev3dev.org/docs/getting-started/)) with the Raspberry2/3 image. 
-1.1 Edit `config.txt` ([use this one](/config.txt))
+2. Edit `config.txt` ([use this one](/config.txt))
 1. Setup Wifi ([Link](https://www.ev3dev.org/docs/tutorials/setting-up-wifi-using-the-command-line/))
    A. `Ctrl+Alt+F6` and Login
    1. `connmanctl`
