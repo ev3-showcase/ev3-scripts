@@ -22,6 +22,7 @@ import ev3dev.brickpi3 as ev3
 import picamera
 from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
                     StreamingServer)
+from rplidar import RPLidar
 
 # from vidgear.gears import NetGear, PiGear, VideoGear
 
@@ -29,7 +30,7 @@ from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
 # os.system("")
 
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
-logLevel = 'DEBUG'  # DEBUG or WARNING
+logLevel = 'WARNING'  # DEBUG or WARNING
 logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
@@ -143,6 +144,21 @@ def videofeed():
     #     #     camera.stop_recording()
 
 
+def lidar():
+    receiver = MQTTReceiver(broker_address=broker_address, port=port)
+    lidar = RPLidar('/dev/ttyUSB0')
+    outfile = open('lidar.log', 'w')
+    print('Recording measurments... Press Crl+C to stop.')
+    for measurment in lidar.iter_measurments():
+        line = ','.join(str(v) for v in measurment)
+        print(line)
+        receiver.sendMessage("stats/lidar", line)
+        outfile.write(line + '\n')
+    lidar.stop()
+    lidar.disconnect()
+    outfile.close()
+
+
 def stats():
     receiver = MQTTReceiver(broker_address=broker_address, port=port)
 
@@ -207,7 +223,7 @@ def stats():
 
 
 def main():
-    runInParallel(carcontrol, videofeed, stats)
+    runInParallel(carcontrol, videofeed, stats, lidar)
     #runInParallel(carcontrol, stats)
 
 

@@ -23,7 +23,7 @@ if [ $? -eq 0 ] ; then
 fi
 
 # Autoinstall requirements
-# python -m pip install -r requirements.txt
+# python3 -m pip install -r requirements.txt
 
 # Update the autoupdate script itself
 wget --quiet --spider https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh
