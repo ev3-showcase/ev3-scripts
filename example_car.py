@@ -31,27 +31,40 @@ from rplidar import RPLidar
 
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
 logLevel = 'WARNING'  # DEBUG or WARNING
+csvFormat = logging.Formatter('%(asctime)s,%(message)s', datefmt='%s')
+today = datetime.today().strftime("%d_%m_%Y_%H_%M_%S")
 logging.basicConfig(level=getattr(
     logging, logLevel), stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
-today = datetime.today().strftime("%d_%m_%Y_%H_%M_%S")
+# Setup File Logging
 dataLoggerFile = logging.FileHandler(
     '/home/robot/data_' + today + '.log.csv', "w")
-dataLogger = logging.getLogger("FILE")
+dataLogger = logging.getLogger("DATA_FILE")
+dataLogger.setLevel("DEBUG")
 
-# Write Header Row
-csvHeaderFormat = logging.Formatter('%(message)s')
-dataLoggerFile.setFormatter(csvHeaderFormat)
+lidarLoggerFile = logging.FileHandler(
+    '/home/robot/lidar_' + today + '.log.csv', "w")
+lidarLogger = logging.getLogger("LIDAR_FILE")
+lidarLogger.setLevel("DEBUG")
+
+# Write Header Rows
+dataLoggerFile.setFormatter(logging.Formatter('%(message)s'))
 dataLogger.addHandler(dataLoggerFile)
 dataLogger.info("datetime, cpu_stat_processes, cpu_stat_percent, mem_stat_used, mem_stat_total, ultransonic, gyro_rate, gyro_angle, motor_steering_duty_cylce, motor_steering_position, motor_steering_state,motor_main_l_duty_cycle,motor_main_l_position,motor_main_l_state,motor_main_r_duty_cycle,motor_main_r_position,motor_main_r_state")
 dataLogger.removeHandler(dataLoggerFile)
 
-# Setup further logging
-csvFormat = logging.Formatter('%(asctime)s,%(message)s', datefmt='%s')
+lidarLoggerFile.setFormatter(logging.Formatter('%(message)s'))
+lidarLogger.addHandler(lidarLoggerFile)
+lidarLogger.info("datetime, newValue, quality, angle, distance")
+lidarLogger.removeHandler(lidarLoggerFile)
+
+# Setup logging For Application
 dataLoggerFile.setFormatter(csvFormat)
 dataLogger.addHandler(dataLoggerFile)
-dataLogger.setLevel("DEBUG")
+lidarLoggerFile.setFormatter(csvFormat)
+lidarLogger.addHandler(lidarLoggerFile)
+
 
 # Set MQTT Variables
 
@@ -148,11 +161,11 @@ def lidar():
     receiver = MQTTReceiver(broker_address=broker_address, port=port)
     lidar = RPLidar('/dev/ttyUSB0')
     outfile = open('lidar.log', 'w')
-    print('Recording measurments... Press Crl+C to stop.')
     for measurment in lidar.iter_measurments():
         line = ','.join(str(v) for v in measurment)
         print(line)
         receiver.sendMessage("stats/lidar", line)
+        lidarLogger.info(line)
         outfile.write(line + '\n')
     lidar.stop()
     lidar.disconnect()
