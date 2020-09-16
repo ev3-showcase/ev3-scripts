@@ -26,6 +26,11 @@ After Calibration has finished, the car will show an infomessage on the screen t
 
 Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/getting-started/basics/
 
+## Development Environment 
+
+You need to install [VSCode](https://code.visualstudio.com/) and [Python](https://www.python.org/). 
+Install the recommended Extensions. 
+
 ## Raspberry with PiBrick setup 
 
 1. Flash the SD Card ([Link](https://www.ev3dev.org/docs/getting-started/)) with the Raspberry2/3 image. 
