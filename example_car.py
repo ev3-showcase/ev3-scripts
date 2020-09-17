@@ -29,7 +29,7 @@ from rplidar import RPLidar
 # os.system("")
 
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
-logLevel = 'DEBUG'  # DEBUG or WARNING
+logLevel = 'WARNING'  # DEBUG or WARNING
 csvFormat = logging.Formatter('%(asctime)s,%(message)s', datefmt='%s')
 today = datetime.today().strftime("%d_%m_%Y_%H_%M_%S")
 logging.basicConfig(level=getattr(
