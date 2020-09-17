@@ -20,8 +20,7 @@ from linux_metrics import cpu_stat, disk_stat, mem_stat
 import ev3car
 import ev3dev.brickpi3 as ev3
 import picamera
-from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
-                    StreamingServer)
+from ev3car import Car, MQTTReceiver, StreamingHandler, StreamingServer
 from rplidar import RPLidar
 
 # from vidgear.gears import NetGear, PiGear, VideoGear
@@ -30,7 +29,7 @@ from rplidar import RPLidar
 # os.system("")
 
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
-logLevel = 'WARNING'  # DEBUG or WARNING
+logLevel = 'DEBUG'  # DEBUG or WARNING
 csvFormat = logging.Formatter('%(asctime)s,%(message)s', datefmt='%s')
 today = datetime.today().strftime("%d_%m_%Y_%H_%M_%S")
 logging.basicConfig(level=getattr(
@@ -69,8 +68,13 @@ lidarLogger.addHandler(lidarLoggerFile)
 # Set MQTT Variables
 
 broker_address = os.getenv(
-    'MQTT_BROKER', 'message-broker-mqtt-websocket-legoracer.apps.p005.otc.mcs-paas.io')
-port = int(os.getenv('MQTT_PORT', 80))
+    'LEGOCAR_MQTT_BROKER_ADDRESS', 'message-broker-mqtt-websocket-legoracer.apps.p005.otc.mcs-paas.io')
+port = int(os.getenv('LEGOCAR_MQTT_BROKER_PORT', 8000))
+client_id = os.getenv('LEGOCAR_ID', 'car-' + uuid.uuid4().hex.upper()[0:6])
+
+
+logging.debug(broker_address)
+logging.debug(client_id)
 
 simulation = False
 car = Car(throttle_factor=100, simulation=simulation)
@@ -89,7 +93,8 @@ def runInParallel(*fns):
 
 def carcontrol():
     try:
-        receiver = MQTTReceiver(broker_address=broker_address, port=port)
+        receiver = MQTTReceiver(client_id=client_id,
+                                broker_address=broker_address, port=port)
 
         global car
         ev3car = car
@@ -158,13 +163,14 @@ def videofeed():
 
 
 def lidar():
-    receiver = MQTTReceiver(broker_address=broker_address, port=port)
+    receiver = MQTTReceiver(client_id=client_id,
+                            broker_address=broker_address, port=port)
     lidar = RPLidar('/dev/ttyUSB0')
     outfile = open('lidar.log', 'w')
     for measurment in lidar.iter_measurments():
         line = ','.join(str(v) for v in measurment)
         print(line)
-        receiver.sendMessage("stats/lidar", line)
+        receiver.sendMessage(client_id + "/stats/lidar", line)
         lidarLogger.info(line)
         outfile.write(line + '\n')
     lidar.stop()
@@ -173,7 +179,8 @@ def lidar():
 
 
 def stats():
-    receiver = MQTTReceiver(broker_address=broker_address, port=port)
+    receiver = MQTTReceiver(client_id=client_id,
+                            broker_address=broker_address, port=port)
 
     p = LegoPort(ev3.INPUT_2)
     p.mode = "ev3-uart"
@@ -204,7 +211,7 @@ def stats():
 
             statsString = ','.join([str(cpu_stat.procs_running()), str(cpu_stat.cpu_percents(1)["idle"]), str(used), str(total), str(us_sensor.value()), str(gyro_sensor.rate), str(gyro_sensor.angle),
                                     str(carStats[0]), str(carStats[1]), str(carStats[2]), str(carStats[3]), str(carStats[4]), str(carStats[5]), str(carStats[6]), str(carStats[7]), str(carStats[8])])
-            receiver.sendMessage("stats/log", statsString)
+            receiver.sendMessage(client_id + "/stats/log", statsString)
             dataLogger.info(statsString)
         except ValueError:
             logging.error("Invalid Stats")

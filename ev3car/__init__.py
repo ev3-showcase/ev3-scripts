@@ -23,7 +23,7 @@ class Car(object):
     def __init__(self, throttle_factor=100, simulation=False):
         self.simulation = simulation
 
-        self.__steering_force = 90
+        self.__steering_force = 80
 
         # car parameters
         # Max steering Angle is the angle from center to max left or right
@@ -57,7 +57,7 @@ class Car(object):
         # get max angle left
         self.steeringMotor.on(-1 * self.__steering_force, brake=False)
         # Move steering to the other side and make sure that the motor has moved and is not blocked from moving to the right
-        while not (self.steeringMotor.is_overloaded and abs(first_pos - self.steeringMotor.position) > 100):
+        while not (self.steeringMotor.is_overloaded and abs(first_pos - self.steeringMotor.position) > 20):
             time.sleep(0.01)
         self.steeringMotor.off()
         logging.info('Second Lock Position: %d' % self.steeringMotor.position)
@@ -115,10 +115,11 @@ class Car(object):
 
             difference = round(curr_angle - target_angle)
             # Take According action
-            # logging.debug("Curr: %i | Target: %i | res: %i", curr_angle, target_angle, -1 * difference)
+            logging.debug("Curr: %i | Target: %i | res: %i",
+                          curr_angle, target_angle, -1 * difference)
             # steer to the left
 
-            if difference > 4 or difference < -4:
+            if difference > 5 or difference < -5:
                 # logging.debug("Issued Command: Steer %i with force %i", -1 * difference, self.__steering_force * abs(difference)/100)
                 self.steeringMotor.on_to_position(
                     self.__steering_force, target_angle, block=False)
@@ -148,10 +149,10 @@ class Car(object):
 
 
 class MQTTReceiver():
-    def __init__(self, broker_address='localhost', port=1883, keepalive=60):
+    def __init__(self, client_id, broker_address='localhost', port=1883, keepalive=60):
         # Constants
-        self.__topic_speed = 'car/speed'
-        self.__topic_steer = 'car/steering'
+        self.__topic_speed = client_id + '/car/speed'
+        self.__topic_steer = client_id + '/car/steering'
 
         self.time = Value(ctypes.c_float, 0)
         self.throttle = Value(ctypes.c_int, 0)
@@ -159,7 +160,7 @@ class MQTTReceiver():
         self.is_run = Value(ctypes.c_bool, True)
 
         self._client = mqtt.Client(
-            'car-' + uuid.uuid4().hex.upper()[0:6], transport='websockets')
+            client_id, transport='websockets')
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.on_disconnect = self._on_disconnect
@@ -190,7 +191,8 @@ class MQTTReceiver():
             # apply callback to issue actions when certain messages arrive
             client.message_callback_add(self.__topic_speed, self._on_speed)
             client.message_callback_add(self.__topic_steer, self._on_steer)
-            logging.debug("Subscribed to topics. Ready for Messages.")
+            logging.debug(
+                "Subscribed to topics. Ready for Messages. ('" + self.__topic_speed + "')")
         else:
             logging.critical("Connection failed with rc {}".format(rc))
 
