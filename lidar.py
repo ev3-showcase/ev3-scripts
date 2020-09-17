@@ -146,6 +146,8 @@ class Lidar():
                         point = str(self.point_XY(line))
                     print(point)
                     line = b""
+                else:
+                    print(line)
 
             except KeyboardInterrupt:
                 break
@@ -220,7 +222,7 @@ class Lidar():
 ################################
 
     def point_XY(self, serial_frame):
-        circular_coordinates = point_Polar(serial_frame)
+        circular_coordinates = self.point_Polar(serial_frame)
         distance = circular_coordinates[0]
         angle = circular_coordinates[1]
 
