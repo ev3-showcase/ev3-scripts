@@ -20,7 +20,8 @@ from linux_metrics import cpu_stat, disk_stat, mem_stat
 import ev3car
 import ev3dev.brickpi3 as ev3
 import picamera
-from ev3car import Car, MQTTReceiver, StreamingHandler, StreamingServer
+from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
+                    StreamingServer)
 from rplidar import RPLidar
 
 # from vidgear.gears import NetGear, PiGear, VideoGear
@@ -133,6 +134,8 @@ def videofeed():
         try:
             address = ('', 8000)
             server = StreamingServer(address, StreamingHandler)
+            logging.info('Started Video Server')
+
             server.serve_forever()
         finally:
             camera.stop_recording()
