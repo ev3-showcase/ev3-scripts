@@ -22,6 +22,8 @@ After Calibration has finished, the car will show an infomessage on the screen t
 | A    | Main motor left Side  |
 | B    | Mani motor right Side |
 | C    | steering              |
+| S2   | Gyro                  |
+| S1   | Ultraschall           |
 | ...  | Light Sensor          |
 
 Case: https://www.dexterindustries.com/BrickPi/brickpi-tutorials-documentation/getting-started/basics/
@@ -45,20 +47,30 @@ Install the recommended Extensions.
    6. `connect <wifi_ssid>`
    7. `quit`
 2. Connect via [vscode-ev3dev-browser](https://github.com/ev3dev/vscode-ev3dev-browser) for development.
-3. Disable the brickman service `sudo systemctl disable brickman`, because we are operating headless, with no monitor. 
+3. Disable the brickman service `sudo systemctl disable brickman`, because we are operating headless, with no monitor. (Password: `maker`)
 4. Copy the `autoupdate/autoupdate.sh` script to your device. 
    1. `mkdir /home/robot/autorun && cd /home/robot/autorun && wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/autoupdate.sh && chmod +x autoupdate.sh`
 6. Setup the service by copying `autoupdate/car.service` to `/etc/systemd/system/car.service`. 
    1. `cd /etc/systemd/system/ && sudo wget https://raw.githubusercontent.com/ev3-showcase/ev3-scripts/master/autoupdate/car.service && sudo systemctl daemon-reload && sudo systemctl enable car.service && sudo systemctl start car.service`
 7. Install pip `sudo apt-get update && sudo apt-get install python3-pip -y && pip3 install -U --force-reinstall pip`
 8. Do one installation of python packages `cd ~/autorun && python3 -m pip install -r requirements.txt`
+9. Restart the device. (`sudo reboot`)
+
 
 ## Verify or monitor scripts
 
-`journaltctl -u car`
+`journalctl -u car -f`
 
 Kill all processes: 
 `pkill -f python3`
+
+Shutdown Device: 
+`sudo shutdown -t now`
+
+Service: 
+`systemctl start car`
+`systemctl stop car`
+`systemctl status car`
 
 ## Auto Update
 
