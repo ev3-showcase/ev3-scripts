@@ -4,7 +4,9 @@ import json
 import logging
 import os
 import signal
+import socket
 import socketserver
+import subprocess
 import sys
 import time
 import uuid
@@ -13,16 +15,16 @@ from http import server
 from multiprocessing import Pool, Process, Value
 from threading import Condition
 
+import ev3dev.brickpi3 as ev3
+import picamera
 from ev3dev2.port import LegoPort
 from ev3dev2.sensor.lego import GyroSensor
 from linux_metrics import cpu_stat, disk_stat, mem_stat
+from rplidar import RPLidar
 
 import ev3car
-import ev3dev.brickpi3 as ev3
-import picamera
 from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
                     StreamingServer)
-from rplidar import RPLidar
 
 # from vidgear.gears import NetGear, PiGear, VideoGear
 
@@ -67,7 +69,9 @@ lidarLogger.addHandler(lidarLoggerFile)
 
 
 # Set MQTT Variables
-
+# TODO: Remove our address when all cars are set up with the environment
+# broker_address = os.getenv(
+#     'LEGOCAR_MQTT_BROKER_ADDRESS', 'broker.mqttdashboard.com')
 broker_address = os.getenv(
     'LEGOCAR_MQTT_BROKER_ADDRESS', 'message-broker-mqtt-websocket-legoracer.apps.p005.otc.mcs-paas.io')
 port = int(os.getenv('LEGOCAR_MQTT_BROKER_PORT', 8000))
@@ -172,7 +176,6 @@ def lidar():
     outfile = open('lidar.log', 'w')
     for measurment in lidar.iter_measurments():
         line = ','.join(str(v) for v in measurment)
-        print(line)
         receiver.sendMessage(client_id + "/stats/lidar", line)
         lidarLogger.info(line)
         outfile.write(line + '\n')
@@ -222,15 +225,15 @@ def stats():
         # time.sleep(0.5)
 
 # datetime, Zeit – ist klar
-# gyro_rate, - The rate at which the sensor is rotating, in degrees/second.
-# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.rate
-# gyro_angle, - The number of degrees that the sensor has been rotated since it was put into this mode.
-# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.angle
 # cpu_stat_processes, Number of Processes Running
 # cpu_stat_percent, percentage unused CPU
 # mem_stat_used - Used Bytes of Memory
 # mem_stat_total - Total Bytes of Memory
 # ultransonic - Abstand in mm
+# gyro_rate, - The rate at which the sensor is rotating, in degrees/second.
+# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.rate
+# gyro_angle, - The number of degrees that the sensor has been rotated since it was put into this mode.
+# https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html?highlight=gyro#ev3dev2.sensor.lego.GyroSensor.angle
 # motor_steering_duty_cylce, - Returns the current duty cycle of the motor. Units are percent. Values are -100 to 100.
 # https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html#ev3dev2.motor.Motor.duty_cycle
 # motor_steering_position, - Returns the current position of the motor in pulses of the rotary encoder. When the motor rotates clockwise, the position will increase. Likewise, rotating counter-clockwise causes the position to decrease. Writing will set the position to that value.
@@ -245,9 +248,33 @@ def stats():
 # motor_main_r_state - same as above
 
 
+def admin():
+
+    receiver = MQTTReceiver(client_id=client_id,
+                            broker_address=broker_address, port=port)
+
+    while True:
+
+        string = socket.gethostbyname(socket.gethostname())
+        dataLogger.info(string)
+        receiver.sendMessage(client_id + "/admin/ip", string)
+        dataLogger.info(receiver.shutdown)
+        if receiver.shutdown is True:
+            dataLogger.info("Shutting Down")
+            shutdown()
+        time.sleep(2)
+
+
+def shutdown():
+    command = "/usr/bin/sudo /sbin/shutdown -h now"
+    import subprocess
+    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    dataLogger.info(process.communicate()[0])
+
+
 def main():
-    runInParallel(carcontrol, videofeed, stats, lidar)
-    #runInParallel(carcontrol, stats)
+    runInParallel(carcontrol, videofeed, stats, admin)
+    # runInParallel(admin)
 
 
 if __name__ == '__main__':

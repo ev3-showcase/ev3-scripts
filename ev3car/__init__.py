@@ -115,8 +115,7 @@ class Car(object):
 
             difference = round(curr_angle - target_angle)
             # Take According action
-            logging.debug("Curr: %i | Target: %i | res: %i",
-                          curr_angle, target_angle, -1 * difference)
+            #logging.debug("Curr: %i | Target: %i | res: %i", curr_angle, target_angle, -1 * difference)
             # steer to the left
 
             if difference > 5 or difference < -5:
@@ -153,10 +152,12 @@ class MQTTReceiver():
         # Constants
         self.__topic_speed = client_id + '/car/speed'
         self.__topic_steer = client_id + '/car/steering'
+        self.__topic_shutdown = client_id + '/admin/shutdown'
 
         self.time = Value(ctypes.c_float, 0)
         self.throttle = Value(ctypes.c_int, 0)
         self.steering = Value(ctypes.c_int, 0)
+        self.shutdown = False
         self.is_run = Value(ctypes.c_bool, True)
 
         self._client = mqtt.Client(
@@ -186,11 +187,13 @@ class MQTTReceiver():
 
             # subscribe to steering and speed topics
             client.subscribe(
-                [(self.__topic_speed, 0), (self.__topic_steer, 0)])
+                [(self.__topic_speed, 0), (self.__topic_steer, 0), (self.__topic_shutdown, 0)])
 
             # apply callback to issue actions when certain messages arrive
             client.message_callback_add(self.__topic_speed, self._on_speed)
             client.message_callback_add(self.__topic_steer, self._on_steer)
+            client.message_callback_add(
+                self.__topic_shutdown, self._on_shutdown)
             logging.debug(
                 "Subscribed to topics. Ready for Messages. ('" + self.__topic_speed + "')")
         else:
@@ -204,6 +207,13 @@ class MQTTReceiver():
         # self.time.value = driver_msg['time']
         # self.throttle.value = driver_msg['throttle']
         # self.steering.value = driver_msg['steering']
+
+    def _on_shutdown(self, client, userdata, msg):
+        try:
+            value = bool(msg.payload.decode('utf-8'))
+            self.shutdown = value
+        except ValueError:
+            logging.error("Invalid Shutdown Command")
 
     def _on_speed(self, client, userdata, msg):
         try:
