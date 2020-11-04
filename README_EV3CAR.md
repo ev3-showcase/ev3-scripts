@@ -1,5 +1,5 @@
 # ev3car package
-
+> Ignore this readme if you are just setting it up, this is for development.
 ## Introduction
 The ev3car package is a package created to make using our demo car much easier. It takes out a whole lot of complexity regarding connecting, logging and various other topics, especially when it comes to blocking or non-blocking requests.
 
