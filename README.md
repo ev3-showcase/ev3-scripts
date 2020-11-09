@@ -16,9 +16,9 @@
 
 | Port | Motor                 |
 | ---- | --------------------- |
-| A    | Main motor left Side  |
+| C    | Main motor left Side  |
 | B    | Mani motor right Side |
-| C    | steering              |
+| D    | steering              |
 | S2   | Gyro                  |
 | S1   | Ultraschall           |
 | ...  | Light Sensor          |
