@@ -32,7 +32,7 @@ from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
 # os.system("")
 
 # Setup Logging: https://docs.python.org/3/library/logging.html#logging-levels
-logLevel = 'WARNING'  # DEBUG or WARNING
+logLevel = 'DEBUG'  # DEBUG or WARNING
 csvFormat = logging.Formatter('%(asctime)s,%(message)s', datefmt='%s')
 today = datetime.today().strftime("%d_%m_%Y_%H_%M_%S")
 logging.basicConfig(level=getattr(
@@ -217,7 +217,8 @@ def stats():
 
             statsString = ','.join([str(cpu_stat.procs_running()), str(cpu_stat.cpu_percents(1)["idle"]), str(used), str(total), str(us_sensor.value()), str(gyro_sensor.rate), str(gyro_sensor.angle),
                                     str(carStats[0]), str(carStats[1]), str(carStats[2]), str(carStats[3]), str(carStats[4]), str(carStats[5]), str(carStats[6]), str(carStats[7]), str(carStats[8])])
-            receiver.sendMessage(client_id + "/stats/log", statsString)
+            receiver.sendMessage(client_id + "/stats/log",
+                                 str(time.time()) + "," + statsString)
             dataLogger.info(statsString)
         except ValueError:
             logging.error("Invalid Stats")
