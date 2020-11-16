@@ -81,7 +81,7 @@ client_id = os.getenv('LEGOCAR_ID', 'car-' + uuid.uuid4().hex.upper()[0:6])
 logging.debug(broker_address)
 logging.debug(client_id)
 
-simulation = False
+simulation = True
 car = Car(throttle_factor=100, simulation=simulation)
 
 
