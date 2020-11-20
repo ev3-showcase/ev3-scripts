@@ -274,7 +274,7 @@ def shutdown():
 
 
 def main():
-    runInParallel(carcontrol, videofeed, stats, admin, lidar)
+    runInParallel(carcontrol, stats, admin, lidar)
     # runInParallel(admin)
 
 
