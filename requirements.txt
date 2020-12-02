@@ -1,4 +1,4 @@
-paho-mqtt==1.4.0
+paho-mqtt==1.5.1
 python-ev3dev2==2.0.0b3
 multiprocess==0.70.9
 picamera==1.13

@@ -26,8 +26,6 @@ import ev3car
 from ev3car import (Car, MQTTReceiver, StreamingHandler, StreamingOutput,
                     StreamingServer)
 
-# from vidgear.gears import NetGear, PiGear, VideoGear
-
 # Kill all processes previously running
 # os.system("")
 
@@ -128,6 +126,8 @@ def carcontrol():
         logging.info('Termination signal received, closing connection')
         receiver.close()
 
+# Local Video Feed Server
+
 
 def videofeed():
     with picamera.PiCamera(resolution='1640x1232', framerate=15) as camera:
@@ -143,34 +143,10 @@ def videofeed():
             server.serve_forever()
         finally:
             camera.stop_recording()
-# def videofeed():
-    # options = {"hflip": True, "exposure_mode": "auto", "iso": 800,
-    #            "exposure_compensation": 15, "awb_mode": "horizon", "sensor_mode": 0}
-    # # open pi video stream with defined parameters
-    # stream = PiGear(resolution=(640, 480), framerate=60,
-    #                 logging=True).start()
-    # server = NetGear()
-
-    # while True:
-    #       # read frames from stream
-    #     frame = stream.read()
-
-    #     # check for frame if Nonetype
-    #     if frame is None:
-    #         break
-
-    #     server.send(frame)
-    #     # camera.start_recording(ev3car.output, format='mjpeg')
-    #     # try:
-    #     #     address = ('', 8000)
-    #     #     server = StreamingServer(address, StreamingHandler)
-    #     #     server.serve_forever()
-    #     # finally:
-    #     #     camera.stop_recording()
 
 
 def lidar():
-    receiver = MQTTReceiver(client_id=client_id,
+    receiver = MQTTReceiver(client_id=client_id + "-lidar",
                             broker_address=broker_address, port=port)
     lidar = RPLidar('/dev/ttyUSB0')
     outfile = open('lidar.log', 'w')
@@ -185,7 +161,7 @@ def lidar():
 
 
 def stats():
-    receiver = MQTTReceiver(client_id=client_id,
+    receiver = MQTTReceiver(client_id=client_id + "-stats",
                             broker_address=broker_address, port=port)
 
     p = LegoPort(ev3.INPUT_2)
@@ -251,7 +227,7 @@ def stats():
 
 def admin():
 
-    receiver = MQTTReceiver(client_id=client_id,
+    receiver = MQTTReceiver(client_id=client_id + "-admin",
                             broker_address=broker_address, port=port)
 
     while True:
@@ -275,7 +251,7 @@ def shutdown():
 
 def main():
     runInParallel(carcontrol, stats, admin, lidar)
-    # runInParallel(admin)
+    # runInParallel(carcontrol, stats)
 
 
 if __name__ == '__main__':
